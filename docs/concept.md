@@ -143,6 +143,7 @@ No MVP-blocking questions remain open — attribution, schema stability, agent i
 - **(v1)** What reference defines Tier C "judged quality" — a golden example, the agent's own stated role, or a human-labeled set? Deferred deliberately until the MVP proves the deterministic signal is useful.
 - **(v1)** Once the docs-sync cache exists, how precisely should it distinguish a real conventions change from incidental page-noise before re-distilling guidance?
 - **(post-MVP)** What is the data-retention/pruning policy as run history accumulates across many agents?
+- **(v1+)** Could outcome/consequence signal — did the agent's work survive in git (not get reverted/overwritten) and did tests pass afterward — become a metric source alongside the transcript-derived process signal? Two unknowns gate this and must be resolved on real data before any spec text: (a) can a run be linked to its downstream commits and test runs _without_ heuristic attribution, given handler's deterministic-attribution invariant and the confound of human edits after the run; and (b) does "survival" actually correlate with agent quality rather than with downstream human carefulness? Sequenced after the V1 persistent run store and `SubagentStop` hook, which any outcome tracking would build on.
 
 ### Next Steps
 
