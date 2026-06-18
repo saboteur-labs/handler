@@ -72,12 +72,12 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 ### Task 7: Conventions sync skill (authored via skill-creator)
 
 **What:** A Claude Code skill that fetches Anthropic's current subagent docs, distills them into the Task 2 artifact shape, writes `~/.handler/conventions.json`, and records `sourceHash` + `lastSynced`.
-**Files:** new skill under the user's skills dir (e.g. `handler-sync-conventions/`), authored with `skill-creator`.
+**Files:** `.claude/skills/handler-sync-conventions/` (shipped in-repo), authored with `skill-creator`.
 **Done when:** invoking the skill fetches the docs (WebFetch), emits a valid artifact that handler's Task 2 loader accepts (correct `version`, `rules`, `sourceHash`, `lastSynced`), and a **failed fetch leaves any prior artifact intact** (no partial/empty overwrite); a dry run produces an artifact that loads without the "malformed" degrade path.
 **Depends on:** 2
 **Estimate:** 3
-**Notes:** Reqs 18, 19 — the only network path, and it lives here, not in handler. **Not TDD** (skill authoring, not core code). Risk: distillation must yield a stable, schema-valid artifact deterministically enough that re-runs over unchanged docs produce the same `sourceHash`. The skill is a feature deliverable (spec FR8).
-**Done:** [ ]
+**Notes:** Reqs 18, 19 — the only network path, and it lives here, not in handler. **Not TDD** (skill authoring, not core code). Risk: distillation must yield a stable, schema-valid artifact deterministically enough that re-runs over unchanged docs produce the same `sourceHash`. The skill is a feature deliverable (spec FR8). The bundled `scripts/write-conventions.mjs` reproduces handler's `hashRules` byte-for-byte (verified: synced artifact reads back as `fresh`) and writes atomically (temp+rename) after validating the rules, so a failed/malformed distillation leaves the prior artifact intact.
+**Done:** [x]
 
 ### Task 8: Generate, ship, and wire the shipped artifact
 
