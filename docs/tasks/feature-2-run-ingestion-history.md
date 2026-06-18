@@ -37,7 +37,7 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Depends on:** 1
 **Estimate:** 3
 **Notes:** Highest-uncertainty task — pin behavior against a real `~/.claude` fixture (Reqs 2, 4, 7, 12). All defensive guarding lives here so callers can assume a clean `RawRun`.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 4: Definition snapshot loader
 
