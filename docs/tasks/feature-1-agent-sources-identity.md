@@ -27,7 +27,7 @@ Since this is the repo's first feature, it includes the one-time project scaffol
 **Depends on:** 1
 **Estimate:** 2
 **Notes:** Seed from the known built-in agent names (e.g. `general-purpose`, `Explore`, `Plan`, etc.). Keep it data-driven so it can grow.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 3: Source model + conventional-folder derivation (Req 4)
 
