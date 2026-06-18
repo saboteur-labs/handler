@@ -86,6 +86,7 @@ Builds on Feature 2 (run store, `RawRun`/`Run`, transcript parsing, definition s
 **Depends on:** 6
 **Estimate:** 3
 **Notes:** Reuses Task 6's delta output; this task is presentation + arg parsing only. Req 6.
+**Done:** [x] — `handler diff <agent>` (`src/cli/commands/diff.ts`, registered in `cli/index.ts`) prints each change point with `before:`/`after:` absolute aggregates and a signed `delta:` line + low-confidence indicator; single-version agent → "no definition changes"; unknown agent → "No runs found". Extracted shared numeric formatters to `src/cli/format.ts` (`signed`/`signedPercent`/`decimal`/`percent`); `show` refactored onto them. 3 diff tests.
 
 ### Task 9: Surface per-run telemetry in `handler show`
 

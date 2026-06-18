@@ -24,6 +24,7 @@ import {
   SourceRegistry,
   summarizeAgents,
 } from '../../core/index';
+import { signed, signedPercent } from '../format';
 import type { CliContext } from './source';
 
 export function registerShowCommand(program: Command, ctx: CliContext): void {
@@ -137,20 +138,6 @@ function formatDefinitionChange(delta: DefinitionChangeDelta): string {
   ];
   const confidence = delta.lowConfidence ? chalk.yellow(' [low confidence]') : '';
   return `${chalk.cyan('── definition changed ──')} ${parts.join(' · ')}${confidence}`;
-}
-
-/** Signed number to one decimal, or `n/a` when the delta is undefined. */
-function signed(value: number | undefined): string {
-  if (value === undefined) {
-    return 'n/a';
-  }
-  const rounded = Math.round(value * 10) / 10;
-  return `${rounded >= 0 ? '+' : ''}${rounded}`;
-}
-
-/** Signed percentage-point delta from a 0–1 rate delta. */
-function signedPercent(value: number | undefined): string {
-  return value === undefined ? 'n/a' : `${signed(value * 100)}%`;
 }
 
 const BAND_COLOR: Record<ScoreBand, (s: string) => string> = {

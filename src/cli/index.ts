@@ -13,6 +13,7 @@ import { Command, CommanderError } from 'commander';
 
 import { VERSION } from '../core/index';
 import { registerConventionsCommand } from './commands/conventions';
+import { registerDiffCommand } from './commands/diff';
 import { registerListCommand } from './commands/list';
 import { registerNoteCommand } from './commands/note';
 import { registerShowCommand } from './commands/show';
@@ -95,6 +96,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerSourceCommand(program, ctx);
   registerListCommand(program, ctx);
   registerShowCommand(program, ctx);
+  registerDiffCommand(program, ctx);
   registerConventionsCommand(program, ctx);
   registerNoteCommand(program, ctx);
 
