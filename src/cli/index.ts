@@ -21,6 +21,8 @@ export interface RunOptions {
   readonly projectsRoot?: string;
   /** Run-store location; defaults to the core default. */
   readonly storePath?: string;
+  /** Score-store location; defaults to the core default. */
+  readonly scoreStorePath?: string;
   readonly out?: (line: string) => void;
   readonly err?: (line: string) => void;
 }
@@ -40,6 +42,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     registryPath: options.registryPath,
     projectsRoot: options.projectsRoot,
     storePath: options.storePath,
+    scoreStorePath: options.scoreStorePath,
   };
 
   const program = new Command();

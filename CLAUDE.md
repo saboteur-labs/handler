@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-In implementation. The MVP is broken into 5 features in `docs/features.md`; per-feature task lists live in `docs/tasks/`. Feature 1 (agent sources & identity) and Feature 2 (run ingestion & attributed history) are complete — the CLI can register sources (`source register`/`source list`), ingest runs from Claude Code's transcripts, and list/show attributed agents with metrics. Features 3–5 (scoring, conventions assessment, notes) are not yet started. The design docs remain the source of truth:
+In implementation. The MVP is broken into 5 features in `docs/features.md`; per-feature task lists live in `docs/tasks/`. Features 1–3 are complete: agent sources & identity (Feature 1), run ingestion & attributed history (Feature 2), and deterministic behavioral scoring (Feature 3). The CLI can register sources (`source register`/`source list`), ingest runs from Claude Code's transcripts, and `list`/`show` attributed agents with metrics and a per-run deterministic score (band, 0–100 composite, and the failing Tier A + tool-utilization checks). Features 4–5 (conventions assessment, notes) are not yet started. The design docs remain the source of truth:
 
 - `docs/concept.md` — the "what and why" (problem, audience, capabilities, milestones, risks).
 - `docs/spec.md` — the **MVP** product spec: 21 numbered, testable functional requirements with RFC-2119 language, scoped to MVP only. v1/v2 work is explicitly in "Out of Scope (Deferred)".

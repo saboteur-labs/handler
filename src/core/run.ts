@@ -8,6 +8,8 @@
  * Everything else is kept and tagged (Req 6): `incomplete` for a run without a
  * completed summary, `orphan` when the definition can't be found.
  */
+import { dirname, join } from 'node:path';
+
 import { isBuiltinAgent } from './denylist';
 import { agentIdentity, type AgentIdentity, identityKey } from './identity';
 import { loadDefinitionSnapshot } from './snapshot';
@@ -27,6 +29,12 @@ export interface Run {
   /** The run's `agentId`, unique per run within an agent. */
   readonly runId: string;
   readonly agentName: string;
+  /** The run's recorded working directory; the implicit scope for boundary checks. */
+  readonly cwd: string | undefined;
+  /** Parent session id, part of the sub-transcript locator. */
+  readonly sessionId: string | undefined;
+  /** Path to the per-run sub-transcript, or `undefined` when not locatable. */
+  readonly sidechainPath: string | undefined;
   /** ISO 8601 timestamp of the run, used for last-used metrics. */
   readonly timestamp: string | undefined;
   readonly status: string | undefined;
@@ -43,7 +51,11 @@ export interface Run {
  * Attribute and snapshot a `RawRun` against the registered `sources`, or return
  * `null` when the run names a built-in/plugin agent or matches no source.
  */
-export function assembleRun(raw: RawRun, sources: readonly AgentSource[]): Run | null {
+export function assembleRun(
+  raw: RawRun,
+  sources: readonly AgentSource[],
+  transcriptPath: string,
+): Run | null {
   const identity = resolveRunIdentity(raw, sources);
   if (identity === null) {
     return null;
@@ -65,6 +77,9 @@ export function assembleRun(raw: RawRun, sources: readonly AgentSource[]): Run |
     identityKey: identityKey(identity),
     runId: raw.agentId,
     agentName: identity.name,
+    cwd: raw.cwd,
+    sessionId: raw.sessionId,
+    sidechainPath: sidechainPathFor(raw, transcriptPath),
     timestamp: raw.timestamp,
     status: raw.status,
     totalDurationMs: raw.totalDurationMs,
@@ -74,6 +89,19 @@ export function assembleRun(raw: RawRun, sources: readonly AgentSource[]): Run |
     definitionSnapshot,
     tags,
   };
+}
+
+/**
+ * Derive the per-run sub-transcript path. Claude Code stores it at
+ * `<projectDir>/<sessionId>/subagents/agent-<agentId>.jsonl`, alongside the
+ * parent transcript. Returns `undefined` when the session id is missing, so
+ * scoring can tell a locatable run from one it cannot reach.
+ */
+function sidechainPathFor(raw: RawRun, transcriptPath: string): string | undefined {
+  if (raw.sessionId === undefined) {
+    return undefined;
+  }
+  return join(dirname(transcriptPath), raw.sessionId, 'subagents', `agent-${raw.agentId}.jsonl`);
 }
 
 /**

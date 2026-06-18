@@ -9,6 +9,7 @@ run(process.argv.slice(2), {
   registryPath: process.env.HANDLER_REGISTRY,
   projectsRoot: process.env.HANDLER_PROJECTS,
   storePath: process.env.HANDLER_STORE,
+  scoreStorePath: process.env.HANDLER_SCORES,
 })
   .then((code) => {
     process.exitCode = code;

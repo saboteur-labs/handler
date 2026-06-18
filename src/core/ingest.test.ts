@@ -13,6 +13,7 @@ function taskEntry(agentType: string, agentId: string, cwd: string): string {
   return JSON.stringify({
     type: 'user',
     cwd,
+    sessionId: 'session',
     toolUseResult: {
       status: 'completed',
       agentId,
@@ -66,6 +67,9 @@ describe('ingest', () => {
     expect(runs[0]?.identityKey).toBe(identityKey(agentIdentity(repoSource(repoRoot), 'reviewer')));
     expect(runs[0]?.definitionSnapshot).toBe('definition body');
     expect(runs[0]?.tags).toEqual([]);
+    expect(runs[0]?.sidechainPath).toBe(
+      join(projectsRoot, '-encoded-project', 'session', 'subagents', 'agent-agent-1.jsonl'),
+    );
   });
 
   it('persists ingested runs to the store file', () => {

@@ -14,11 +14,17 @@ import type { Run } from '../run';
 import { readJsonFile, writeJsonFile } from './json-store';
 
 interface RunStoreFile {
-  readonly version: 1;
+  readonly version: number;
   readonly runs: Run[];
 }
 
-const STORE_VERSION = 1;
+/**
+ * Run-store schema version. The store is a regenerable cache rebuilt from
+ * transcripts, so a store written under a different version is discarded rather
+ * than migrated. Bump this whenever the stored `Run` shape changes (it became
+ * 2 when runs gained `cwd`/`sessionId`/`sidechainPath` for scoring).
+ */
+export const RUN_STORE_VERSION = 2;
 
 /** Default run-store location: `~/.handler/runs.json`. */
 export function defaultRunStorePath(): string {
@@ -54,7 +60,7 @@ export class RunStore {
   }
 
   private persist(): void {
-    const file: RunStoreFile = { version: STORE_VERSION, runs: this.runs };
+    const file: RunStoreFile = { version: RUN_STORE_VERSION, runs: this.runs };
     writeJsonFile(this.filePath, file);
   }
 }
@@ -67,11 +73,12 @@ function extractRuns(raw: unknown): Run[] {
   if (typeof raw !== 'object' || raw === null) {
     return [];
   }
-  const runs = (raw as { runs?: unknown }).runs;
-  if (!Array.isArray(runs)) {
+  const file = raw as { version?: unknown; runs?: unknown };
+  // Discard a store written under a different schema — it is a rebuildable cache.
+  if (file.version !== RUN_STORE_VERSION || !Array.isArray(file.runs)) {
     return [];
   }
-  return runs.filter(isRun);
+  return file.runs.filter(isRun);
 }
 
 function isRun(value: unknown): value is Run {

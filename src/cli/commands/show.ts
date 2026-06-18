@@ -14,6 +14,10 @@ import {
   type AgentSummary,
   ingest,
   type Run,
+  type Score,
+  type ScoreBand,
+  scoreRun,
+  ScoreStore,
   SourceRegistry,
   summarizeAgents,
 } from '../../core/index';
@@ -41,7 +45,7 @@ export function registerShowCommand(program: Command, ctx: CliContext): void {
         printAmbiguous(ctx, name, matches);
         return;
       }
-      printAgent(ctx, agent, runs);
+      printAgent(ctx, agent, runs, new ScoreStore(ctx.scoreStorePath));
     });
 }
 
@@ -52,7 +56,12 @@ function printAmbiguous(ctx: CliContext, name: string, matches: readonly AgentSu
   }
 }
 
-function printAgent(ctx: CliContext, agent: AgentSummary, allRuns: readonly Run[]): void {
+function printAgent(
+  ctx: CliContext,
+  agent: AgentSummary,
+  allRuns: readonly Run[],
+  scoreStore: ScoreStore,
+): void {
   const runs = allRuns.filter((run) => run.identityKey === agent.identityKey);
   const metrics = aggregateMetrics(runs);
 
@@ -78,7 +87,26 @@ function printAgent(ctx: CliContext, agent: AgentSummary, allRuns: readonly Run[
   ctx.out('  runs:');
   for (const run of runs) {
     ctx.out(`    ${formatRun(run)}`);
+    ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
   }
+}
+
+const BAND_COLOR: Record<ScoreBand, (s: string) => string> = {
+  pass: chalk.green,
+  warn: chalk.yellow,
+  fail: chalk.red,
+};
+
+/** One-line score: band, composite, and the checks that didn't pass. */
+function formatScore(score: Score | null): string {
+  if (score === null) {
+    return chalk.dim('score: unscored (no sub-transcript)');
+  }
+  const band = BAND_COLOR[score.band](score.band.toUpperCase());
+  const flagged = score.breakdown.filter((c) => c.status === 'warn' || c.status === 'fail');
+  const detail =
+    flagged.length > 0 ? ` — ${flagged.map((c) => `${c.label}: ${c.detail}`).join('; ')}` : '';
+  return `score: ${band} ${score.composite}${detail}`;
 }
 
 function formatRun(run: Run): string {

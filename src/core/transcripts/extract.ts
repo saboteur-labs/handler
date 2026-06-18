@@ -23,6 +23,8 @@ export interface RawRun {
   readonly agentId: string;
   /** The run's recorded working directory; absent on a malformed entry. */
   readonly cwd: string | undefined;
+  /** Parent session id; joins the run to its per-run sub-transcript. */
+  readonly sessionId: string | undefined;
   /** ISO 8601 entry timestamp; absent on a malformed entry. */
   readonly timestamp: string | undefined;
   readonly status: string | undefined;
@@ -74,6 +76,7 @@ function extractRun(entry: unknown): RawRun | null {
     agentType,
     agentId,
     cwd: isNonEmptyString(entry.cwd) ? entry.cwd : undefined,
+    sessionId: isNonEmptyString(entry.sessionId) ? entry.sessionId : undefined,
     timestamp: isNonEmptyString(entry.timestamp) ? entry.timestamp : undefined,
     status,
     totalDurationMs,
