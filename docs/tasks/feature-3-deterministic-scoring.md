@@ -86,8 +86,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** add/get by `(runId, rubricVersion)`; re-adding the same key is a no-op; a fresh instance reloads; structurally-invalid file degrades to empty; tests cover add, dedupe, reload, version-keying.
 **Depends on:** 7
 **Estimate:** 2
-**Notes:** Mirror `RunStore`; default `~/.handler/scores.json`. Req 12 (versioned annotations).
-**Done:** [ ]
+**Notes:** Mirror `RunStore`; default `~/.handler/scores.json`. Req 12 (versioned annotations). `ScoreAnnotation = {runId, score}`; keyed by `(runId, score.rubricVersion)`.
+**Done:** [x]
 
 ### Task 9: Scoring orchestrator (lazy, cached by rubric version)
 
