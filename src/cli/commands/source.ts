@@ -18,6 +18,10 @@ export interface CliContext {
   readonly out: (line: string) => void;
   /** Registry file location; defaults to the core default when undefined. */
   readonly registryPath?: string;
+  /** Transcripts root for ingestion; defaults to the core default. */
+  readonly projectsRoot?: string;
+  /** Run-store location; defaults to the core default. */
+  readonly storePath?: string;
 }
 
 interface RegisterOptions {

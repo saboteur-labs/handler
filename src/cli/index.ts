@@ -10,11 +10,16 @@ import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
 
 import { VERSION } from '../core/index';
+import { registerListCommand } from './commands/list';
 import type { CliContext } from './commands/source';
 import { registerSourceCommand } from './commands/source';
 
 export interface RunOptions {
   readonly registryPath?: string;
+  /** Transcripts root for ingestion; defaults to the core default. */
+  readonly projectsRoot?: string;
+  /** Run-store location; defaults to the core default. */
+  readonly storePath?: string;
   readonly out?: (line: string) => void;
   readonly err?: (line: string) => void;
 }
@@ -29,7 +34,12 @@ const NORMAL_EXIT_CODES = new Set([
 export async function run(argv: readonly string[], options: RunOptions = {}): Promise<number> {
   const out = options.out ?? ((line: string) => process.stdout.write(`${line}\n`));
   const err = options.err ?? ((line: string) => process.stderr.write(`${line}\n`));
-  const ctx: CliContext = { out, registryPath: options.registryPath };
+  const ctx: CliContext = {
+    out,
+    registryPath: options.registryPath,
+    projectsRoot: options.projectsRoot,
+    storePath: options.storePath,
+  };
 
   const program = new Command();
   program
@@ -43,6 +53,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     });
 
   registerSourceCommand(program, ctx);
+  registerListCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });

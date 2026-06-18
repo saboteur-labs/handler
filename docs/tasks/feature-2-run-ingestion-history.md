@@ -96,8 +96,8 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Done when:** `handler list` runs ingestion then prints one line per distinct agent identity (name, source, run count); an integration test drives the CLI over a fixture and asserts output; the command holds no logic beyond calling core.
 **Depends on:** 7
 **Estimate:** 2
-**Notes:** Follows the F1 `source` command pattern (`CliContext`, injectable store/projects paths via options/env). Reuse the `run`/`CliContext` seam in `src/cli/index.ts`.
-**Done:** [ ]
+**Notes:** Follows the F1 `source` command pattern (`CliContext`, injectable store/projects paths via options/env). Reuse the `run`/`CliContext` seam in `src/cli/index.ts`. Grouping logic lives in core (`summarizeAgents`); `projectsRoot`/`storePath` injectable via options and the `HANDLER_PROJECTS`/`HANDLER_STORE` env vars.
+**Done:** [x]
 
 ### Task 10: CLI `show <agent>` command
 
