@@ -11,6 +11,7 @@ function run(overrides: Partial<Run> = {}): Run {
     identityKey: '["repo","/r","reviewer"]',
     runId: 'agent-1',
     agentName: 'reviewer',
+    timestamp: '2026-06-17T00:00:00.000Z',
     status: 'completed',
     totalDurationMs: 1000,
     totalTokens: 500,

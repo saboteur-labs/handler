@@ -86,8 +86,8 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Done when:** given an agent's runs, computes invocation count, total/average duration, aggregated tool usage (from `toolStats`/`totalToolUseCount`), total tokens, and last-used timestamp; incomplete runs are counted but excluded from summary totals (or flagged); tests cover multi-run aggregation and an incomplete run.
 **Depends on:** 5
 **Estimate:** 2
-**Notes:** Tokens only — no derived dollar cost (Req 11). Pure function over `Run[]`.
-**Done:** [ ]
+**Notes:** Tokens only — no derived dollar cost (Req 11). Pure function over `Run[]`. Required threading an ISO `timestamp` through `RawRun` → `Run` (extract + assemble) to support `lastUsed`.
+**Done:** [x]
 
 ### Task 9: CLI `list` command
 

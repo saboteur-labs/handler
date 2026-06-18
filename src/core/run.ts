@@ -15,6 +15,8 @@ import { resolveAgent } from './resolve';
 import type { AgentSource } from './sources/source';
 import type { RawRun, ToolStats } from './transcripts/extract';
 
+export type { ToolStats } from './transcripts/extract';
+
 /** A non-fatal observation about a run that is kept rather than dropped. */
 export type RunTag = 'incomplete' | 'orphan';
 
@@ -25,6 +27,8 @@ export interface Run {
   /** The run's `agentId`, unique per run within an agent. */
   readonly runId: string;
   readonly agentName: string;
+  /** ISO 8601 timestamp of the run, used for last-used metrics. */
+  readonly timestamp: string | undefined;
   readonly status: string | undefined;
   readonly totalDurationMs: number | undefined;
   readonly totalTokens: number | undefined;
@@ -61,6 +65,7 @@ export function assembleRun(raw: RawRun, sources: readonly AgentSource[]): Run |
     identityKey: identityKey(identity),
     runId: raw.agentId,
     agentName: identity.name,
+    timestamp: raw.timestamp,
     status: raw.status,
     totalDurationMs: raw.totalDurationMs,
     totalTokens: raw.totalTokens,

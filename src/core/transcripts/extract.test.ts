@@ -37,6 +37,7 @@ describe('extractRuns', () => {
       agentType: 'Explore',
       agentId: 'a93f6fef4ae63b956',
       cwd: '/Users/me/repo',
+      timestamp: '2026-06-17T00:00:00.000Z',
       status: 'completed',
       totalDurationMs: 106317,
       totalTokens: 56596,

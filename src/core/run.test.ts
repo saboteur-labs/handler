@@ -13,6 +13,7 @@ function rawRun(overrides: Partial<RawRun> = {}): RawRun {
     agentType: 'reviewer',
     agentId: 'agent-1',
     cwd: undefined,
+    timestamp: '2026-06-17T00:00:00.000Z',
     status: 'completed',
     totalDurationMs: 1000,
     totalTokens: 500,
