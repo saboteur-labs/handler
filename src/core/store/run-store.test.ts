@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Run } from '../run';
-import { RunStore } from './run-store';
+import { RUN_STORE_VERSION, RunStore } from './run-store';
 
 function run(overrides: Partial<Run> = {}): Run {
   return {
@@ -75,7 +75,11 @@ describe('RunStore', () => {
   });
 
   it('tolerates a structurally-wrong store file by starting empty', () => {
-    writeFileSync(file, JSON.stringify({ version: 1, runs: 'not-an-array' }), 'utf8');
+    writeFileSync(
+      file,
+      JSON.stringify({ version: RUN_STORE_VERSION, runs: 'not-an-array' }),
+      'utf8',
+    );
     const store = new RunStore(file);
     expect(store.list()).toEqual([]);
     store.add(run());
@@ -83,7 +87,20 @@ describe('RunStore', () => {
   });
 
   it('filters out persisted records missing an identityKey or runId', () => {
-    writeFileSync(file, JSON.stringify({ version: 1, runs: [run(), { agentName: 'x' }] }), 'utf8');
+    writeFileSync(
+      file,
+      JSON.stringify({ version: RUN_STORE_VERSION, runs: [run(), { agentName: 'x' }] }),
+      'utf8',
+    );
     expect(new RunStore(file).list()).toEqual([run()]);
+  });
+
+  it('discards a store written under an older schema version, then rebuilds', () => {
+    writeFileSync(file, JSON.stringify({ version: RUN_STORE_VERSION - 1, runs: [run()] }), 'utf8');
+    expect(new RunStore(file).list()).toEqual([]); // stale schema discarded
+
+    const store = new RunStore(file);
+    store.add(run());
+    expect(store.list()).toHaveLength(1); // re-ingested under the current schema
   });
 });

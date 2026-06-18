@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Score } from '../scoring/rubric';
-import { ScoreStore } from './score-store';
+import { SCORE_STORE_VERSION, ScoreStore } from './score-store';
 
 function score(rubricVersion: number, composite: number): Score {
   return { band: 'pass', composite, breakdown: [], rubricVersion };
@@ -57,10 +57,26 @@ describe('ScoreStore', () => {
   });
 
   it('tolerates a structurally-wrong store file by starting empty', () => {
-    writeFileSync(file, JSON.stringify({ version: 1, annotations: 'nope' }), 'utf8');
+    writeFileSync(
+      file,
+      JSON.stringify({ version: SCORE_STORE_VERSION, annotations: 'nope' }),
+      'utf8',
+    );
     const store = new ScoreStore(file);
     expect(store.list()).toEqual([]);
     store.add({ runId: 'r1', score: score(1, 90) });
     expect(store.list()).toHaveLength(1);
+  });
+
+  it('discards a store written under an older schema version', () => {
+    writeFileSync(
+      file,
+      JSON.stringify({
+        version: SCORE_STORE_VERSION - 1,
+        annotations: [{ runId: 'r1', score: score(1, 90) }],
+      }),
+      'utf8',
+    );
+    expect(new ScoreStore(file).list()).toEqual([]);
   });
 });

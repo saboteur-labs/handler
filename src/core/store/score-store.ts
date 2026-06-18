@@ -20,11 +20,17 @@ export interface ScoreAnnotation {
 }
 
 interface ScoreStoreFile {
-  readonly version: 1;
+  readonly version: number;
   readonly annotations: ScoreAnnotation[];
 }
 
-const STORE_VERSION = 1;
+/**
+ * Score-store schema version. Like the run store, this is a regenerable cache;
+ * a store written under a different version is discarded rather than migrated.
+ * Bump when the stored annotation shape changes (the per-score rubric is
+ * versioned separately via `RUBRIC_VERSION`).
+ */
+export const SCORE_STORE_VERSION = 1;
 
 /** Default score-store location: `~/.handler/scores.json`. */
 export function defaultScoreStorePath(): string {
@@ -62,7 +68,7 @@ export class ScoreStore {
   }
 
   private persist(): void {
-    const file: ScoreStoreFile = { version: STORE_VERSION, annotations: this.annotations };
+    const file: ScoreStoreFile = { version: SCORE_STORE_VERSION, annotations: this.annotations };
     writeJsonFile(this.filePath, file);
   }
 }
@@ -71,11 +77,12 @@ function extractAnnotations(raw: unknown): ScoreAnnotation[] {
   if (typeof raw !== 'object' || raw === null) {
     return [];
   }
-  const annotations = (raw as { annotations?: unknown }).annotations;
-  if (!Array.isArray(annotations)) {
+  const file = raw as { version?: unknown; annotations?: unknown };
+  // Discard a store written under a different schema — it is a rebuildable cache.
+  if (file.version !== SCORE_STORE_VERSION || !Array.isArray(file.annotations)) {
     return [];
   }
-  return annotations.filter(isAnnotation);
+  return file.annotations.filter(isAnnotation);
 }
 
 function isAnnotation(value: unknown): value is ScoreAnnotation {
