@@ -106,8 +106,8 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Done when:** `handler show <name>` prints per-run history and the aggregated metrics from Task 8 (count, duration, tool usage, tokens, last-used), tagging incomplete/orphan runs; an unknown agent prints a clear "no runs" message; an integration test asserts output over a fixture.
 **Depends on:** 7, 8
 **Estimate:** 2
-**Notes:** Resolve which agent by name; if a name is ambiguous across sources, list the matches. Tokens only.
-**Done:** [ ]
+**Notes:** Resolve which agent by name; if a name is ambiguous across sources, list the matches. Tokens only. Verified end-to-end against real `~/.claude` data via the built CLI.
+**Done:** [x]
 
 ---
 

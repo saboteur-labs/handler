@@ -11,6 +11,7 @@ import { Command, CommanderError } from 'commander';
 
 import { VERSION } from '../core/index';
 import { registerListCommand } from './commands/list';
+import { registerShowCommand } from './commands/show';
 import type { CliContext } from './commands/source';
 import { registerSourceCommand } from './commands/source';
 
@@ -54,6 +55,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
 
   registerSourceCommand(program, ctx);
   registerListCommand(program, ctx);
+  registerShowCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });
