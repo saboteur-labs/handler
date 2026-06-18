@@ -76,6 +76,7 @@ Builds on Feature 2 (run store, `RawRun`/`Run`, transcript parsing, definition s
 **Depends on:** 6
 **Estimate:** 3
 **Notes:** CLI holds no logic — assemble the view data in core, format in `src/cli`. Req 6.
+**Done:** [x] — `show` computes `definitionChangeDeltas` and prints a `── definition changed ──` marker (composite/terminal/tool-errors/tokens deltas + `[low confidence]`) before the first run of each new version, with runs ordered chronologically. Correlation API exported from core `index.ts`. +2 show tests (marker present on change; absent when unchanged).
 
 ### Task 8: `handler diff <agent>` command
 

@@ -12,6 +12,8 @@ import type { Command } from 'commander';
 import {
   aggregateMetrics,
   type AgentSummary,
+  type DefinitionChangeDelta,
+  definitionChangeDeltas,
   ingest,
   NoteStore,
   type Run,
@@ -90,11 +92,65 @@ function printAgent(
     ctx.out(`  ${chalk.bold('note:')} ${note.body.replace(/\n/g, '\n  ')}`);
   }
 
+  // A "definition changed" marker is shown before the first run of each new
+  // definition version, carrying the before/after metric delta.
+  const markerByRunId = new Map<string, DefinitionChangeDelta>();
+  for (const delta of definitionChangeDeltas(runs, scoreStore)) {
+    const firstAfter = delta.after.runs[0];
+    if (firstAfter !== undefined) {
+      markerByRunId.set(firstAfter.runId, delta);
+    }
+  }
+
   ctx.out('  runs:');
-  for (const run of runs) {
+  for (const run of [...runs].sort(byTimestamp)) {
+    const marker = markerByRunId.get(run.runId);
+    if (marker !== undefined) {
+      ctx.out(`    ${formatDefinitionChange(marker)}`);
+    }
     ctx.out(`    ${formatRun(run)}`);
     ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
   }
+}
+
+/** Order runs chronologically; runs without a timestamp sort last. */
+function byTimestamp(a: Run, b: Run): number {
+  if (a.timestamp === b.timestamp) {
+    return 0;
+  }
+  if (a.timestamp === undefined) {
+    return 1;
+  }
+  if (b.timestamp === undefined) {
+    return -1;
+  }
+  return a.timestamp < b.timestamp ? -1 : 1;
+}
+
+/** One-line definition-change marker with the before/after deltas. */
+function formatDefinitionChange(delta: DefinitionChangeDelta): string {
+  const parts = [
+    `composite ${signed(delta.compositeDelta)}`,
+    `terminal ${signedPercent(delta.terminalSuccessRateDelta)}`,
+    `tool-errors ${signed(delta.toolErrorCountDelta)}`,
+    `tokens ${signed(delta.tokenTotalDelta)}`,
+  ];
+  const confidence = delta.lowConfidence ? chalk.yellow(' [low confidence]') : '';
+  return `${chalk.cyan('── definition changed ──')} ${parts.join(' · ')}${confidence}`;
+}
+
+/** Signed number to one decimal, or `n/a` when the delta is undefined. */
+function signed(value: number | undefined): string {
+  if (value === undefined) {
+    return 'n/a';
+  }
+  const rounded = Math.round(value * 10) / 10;
+  return `${rounded >= 0 ? '+' : ''}${rounded}`;
+}
+
+/** Signed percentage-point delta from a 0–1 rate delta. */
+function signedPercent(value: number | undefined): string {
+  return value === undefined ? 'n/a' : `${signed(value * 100)}%`;
 }
 
 const BAND_COLOR: Record<ScoreBand, (s: string) => string> = {

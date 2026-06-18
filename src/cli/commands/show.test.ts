@@ -144,6 +144,45 @@ describe('handler CLI: show command (Req 11)', () => {
     expect(report).toContain('remember to widen scope');
   });
 
+  it('marks a definition change on the run timeline with the metric delta', async () => {
+    await invoke(['source', 'register', repo]);
+    // First show ingests agent-1 + agent-2 under the original definition.
+    out.length = 0;
+    await invoke(['show', 'reviewer']);
+
+    // The author edits the definition, then a new run lands under the new one.
+    writeFileSync(
+      join(repo, '.claude', 'agents', 'reviewer.md'),
+      'revised definition body',
+      'utf8',
+    );
+    const projectDir = join(projectsRoot, '-encoded');
+    writeFileSync(
+      join(projectDir, 'session.jsonl'),
+      [
+        completed('reviewer', 'agent-1', repo),
+        interrupted('reviewer', 'agent-2', repo),
+        completed('reviewer', 'agent-9', repo),
+      ].join('\n'),
+      'utf8',
+    );
+    writeSidechain('agent-9', [{ type: 'tool_use', name: 'Read', input: { file_path: 'b.ts' } }]);
+
+    out.length = 0;
+    expect(await invoke(['show', 'reviewer'])).toBe(0);
+    const report = out.join('\n');
+    expect(report).toMatch(/definition changed/);
+    expect(report).toMatch(/tokens/);
+    expect(report).toMatch(/low confidence/); // one run per side
+  });
+
+  it('shows no definition-change marker when the definition never changed', async () => {
+    await invoke(['source', 'register', repo]);
+    out.length = 0;
+    await invoke(['show', 'reviewer']);
+    expect(out.join('\n')).not.toMatch(/definition changed/);
+  });
+
   it('lists the sources when the agent name is ambiguous', async () => {
     // A second run attributed to the user-level source (cwd under home).
     const projectDir = join(projectsRoot, '-encoded-2');
