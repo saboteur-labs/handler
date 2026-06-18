@@ -10,3 +10,6 @@
 export const VERSION = '0.0.0';
 
 export { BUILTIN_AGENT_NAMES, isBuiltinAgent } from './denylist';
+export { normalizePath } from './paths';
+export type { AgentSource, SourceType } from './sources/source';
+export { repoSource, userSource } from './sources/source';

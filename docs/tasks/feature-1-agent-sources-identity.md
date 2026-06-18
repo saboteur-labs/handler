@@ -36,8 +36,8 @@ Since this is the repo's first feature, it includes the one-time project scaffol
 **Done when:** user-level resolves to `~/.claude/agents`; given a repo path, derives `<repo>/.claude/agents`; source paths are normalized (absolute, symlink/`..`-resolved, trailing-slash-stable); tests cover both source types and normalization edge cases.
 **Depends on:** 1
 **Estimate:** 2
-**Notes:** Normalization here is load-bearing for identity (Task 4) and nearest-ancestor matching (Task 6) — get it right once.
-**Done:** [ ]
+**Notes:** Normalization here is load-bearing for identity (Task 4) and nearest-ancestor matching (Task 6) — get it right once. The shared `normalizePath` primitive lives in `src/core/paths.ts` (not inside `source.ts`) since Tasks 4 and 6 also depend on it.
+**Done:** [x]
 
 ### Task 4: Agent identity tuple (Req 8)
 
