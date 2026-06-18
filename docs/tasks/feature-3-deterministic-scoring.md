@@ -26,8 +26,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** given fixture sidechain entries, returns ordered `toolCalls` (name, args), a denial list (matched on the `"Permission to use <tool> has been denied"` string), and an error list (`tool_result.is_error` excluding denials); a missing/malformed file yields empty activity without throwing.
 **Depends on:** none
 **Estimate:** 3
-**Notes:** Highest empirical risk — pin against a real-shaped fixture (`tool_use {name,input}`, `tool_result {is_error,content}`). Reuse `readJsonl`. Surfaces the run `cwd` from sidechain entries as a cross-check.
-**Done:** [ ]
+**Notes:** Highest empirical risk — pin against a real-shaped fixture (`tool_use {name,input}`, `tool_result {is_error,content}`). Reuse `readJsonl`. Surfaces the run `cwd` from sidechain entries as a cross-check. Verified on real data: 712 tool calls across 40 sidechains parsed; denial regex confirmed against an actual `"has been denied"` transcript (counted as denial, not error).
+**Done:** [x]
 
 ### Task 3: Definition tools-scope parser
 
