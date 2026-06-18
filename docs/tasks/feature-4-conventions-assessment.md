@@ -67,7 +67,7 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 **Depends on:** 5
 **Estimate:** 3
 **Notes:** Req 16–18 surface. Thin-CLI pattern per Features 2–3. handler never invokes the skill — the staleness line only _instructs_ the user to run it (filesystem-only integration).
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 7: Conventions sync skill (authored via skill-creator)
 

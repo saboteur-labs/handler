@@ -24,6 +24,8 @@ export interface CliContext {
   readonly storePath?: string;
   /** Score-store location; defaults to the core default. */
   readonly scoreStorePath?: string;
+  /** Conventions-artifact location; defaults to the core default. */
+  readonly conventionsPath?: string;
 }
 
 interface RegisterOptions {

@@ -10,6 +10,7 @@ run(process.argv.slice(2), {
   projectsRoot: process.env.HANDLER_PROJECTS,
   storePath: process.env.HANDLER_STORE,
   scoreStorePath: process.env.HANDLER_SCORES,
+  conventionsPath: process.env.HANDLER_CONVENTIONS,
 })
   .then((code) => {
     process.exitCode = code;

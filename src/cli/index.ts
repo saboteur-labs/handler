@@ -10,6 +10,7 @@ import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
 
 import { VERSION } from '../core/index';
+import { registerConventionsCommand } from './commands/conventions';
 import { registerListCommand } from './commands/list';
 import { registerShowCommand } from './commands/show';
 import type { CliContext } from './commands/source';
@@ -23,6 +24,8 @@ export interface RunOptions {
   readonly storePath?: string;
   /** Score-store location; defaults to the core default. */
   readonly scoreStorePath?: string;
+  /** Conventions-artifact location; defaults to the core default. */
+  readonly conventionsPath?: string;
   readonly out?: (line: string) => void;
   readonly err?: (line: string) => void;
 }
@@ -43,6 +46,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     projectsRoot: options.projectsRoot,
     storePath: options.storePath,
     scoreStorePath: options.scoreStorePath,
+    conventionsPath: options.conventionsPath,
   };
 
   const program = new Command();
@@ -59,6 +63,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerSourceCommand(program, ctx);
   registerListCommand(program, ctx);
   registerShowCommand(program, ctx);
+  registerConventionsCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });
