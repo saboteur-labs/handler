@@ -47,7 +47,7 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 **Depends on:** 1, 2
 **Estimate:** 3
 **Notes:** Reqs 16, 17. Takes the filename stem as input (for 16b). Cue detection (16c) matches the artifact's `cuePatterns` (e.g. "use when"/"when the user") case-insensitively. Reuse `parseToolScope` for 16d. Pure function — no I/O.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 5: Assessment orchestrator over registered definitions
 
