@@ -5,7 +5,11 @@
  */
 import { run } from './index';
 
-run(process.argv.slice(2), { registryPath: process.env.HANDLER_REGISTRY })
+run(process.argv.slice(2), {
+  registryPath: process.env.HANDLER_REGISTRY,
+  projectsRoot: process.env.HANDLER_PROJECTS,
+  storePath: process.env.HANDLER_STORE,
+})
   .then((code) => {
     process.exitCode = code;
   })

@@ -9,7 +9,14 @@
 /** Current handler version. Kept in sync with `package.json`. */
 export const VERSION = '0.0.0';
 
+export type { AgentSummary } from './agents';
+export { summarizeAgents } from './agents';
 export { BUILTIN_AGENT_NAMES, isBuiltinAgent } from './denylist';
+export { ingest } from './ingest';
+export type { IngestOptions } from './ingest';
+export type { AgentMetrics } from './metrics';
+export { aggregateMetrics } from './metrics';
+export type { Run, RunTag } from './run';
 export type { AgentIdentity } from './identity';
 export { agentIdentity, identitiesEqual, identityKey } from './identity';
 export { normalizePath } from './paths';
