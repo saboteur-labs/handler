@@ -96,8 +96,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** `scoreRun(run, …)` returns the score and persists it; a second call with the same `RUBRIC_VERSION` reads the cached annotation (no recompute); an interrupted run with no sidechain degrades to a clear "unscored/incomplete" result; an end-to-end test over a fixture asserts the score and the caching.
 **Depends on:** 1, 2, 3, 4, 5, 6, 7, 8
 **Estimate:** 3
-**Notes:** Lazy compute (Req 12), local-only (Reqs 1, 14). The integration point — most likely place for wiring bugs.
-**Done:** [ ]
+**Notes:** Lazy compute (Req 12), local-only (Reqs 1, 14). The integration point — most likely place for wiring bugs. `scoreRun(run, store)`: cache hit by `(runId, RUBRIC_VERSION)` short-circuits; no sidechain (undefined or missing file) → `null` (unscored); caching proven by a delete-then-rescore test.
+**Done:** [x]
 
 ### Task 10: Surface the score in `handler show`
 
