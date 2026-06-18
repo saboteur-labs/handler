@@ -65,6 +65,49 @@ describe('assembleRun', () => {
     expect(run?.sidechainPath).toBe('/projects/-encoded/sess-1/subagents/agent-agent-1.jsonl');
   });
 
+  it('captures per-run telemetry from the sidechain when present', () => {
+    writeAgent('reviewer', 'definition body');
+    const transcript = join(root, 'sess-1.jsonl');
+    const sidechainDir = join(root, 'sess-1', 'subagents');
+    mkdirSync(sidechainDir, { recursive: true });
+    writeFileSync(
+      join(sidechainDir, 'agent-agent-1.jsonl'),
+      [
+        {
+          type: 'assistant',
+          timestamp: '2026-06-18T10:00:00.000Z',
+          message: {
+            usage: { input_tokens: 10, output_tokens: 5 },
+            model: 'claude-opus-4-8',
+            stop_reason: 'end_turn',
+            content: [],
+          },
+        },
+        {
+          type: 'assistant',
+          timestamp: '2026-06-18T10:00:01.000Z',
+          message: {
+            usage: { input_tokens: 1, output_tokens: 1 },
+            stop_reason: 'end_turn',
+            content: [],
+          },
+        },
+      ]
+        .map((e) => JSON.stringify(e))
+        .join('\n'),
+      'utf8',
+    );
+    const run = assembleRun(rawRun({ cwd: root }), [repoSource(root)], transcript);
+    expect(run?.telemetry?.turns).toHaveLength(2);
+    expect(run?.telemetry?.stopReason).toBe('end_turn');
+    expect(run?.telemetry?.latency).toEqual({ p50Ms: 1000, p95Ms: 1000 });
+  });
+
+  it('leaves telemetry undefined when the sidechain is absent', () => {
+    const run = assembleRun(rawRun({ cwd: root }), [repoSource(root)], TRANSCRIPT);
+    expect(run?.telemetry).toBeUndefined();
+  });
+
   it('leaves the sidechain locator undefined when the session id is missing', () => {
     const run = assembleRun(
       rawRun({ cwd: root, sessionId: undefined }),

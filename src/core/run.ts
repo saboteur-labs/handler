@@ -8,6 +8,7 @@
  * Everything else is kept and tagged (Req 6): `incomplete` for a run without a
  * completed summary, `orphan` when the definition can't be found.
  */
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { isBuiltinAgent } from './denylist';
@@ -16,11 +17,22 @@ import { loadDefinitionSnapshot } from './snapshot';
 import { resolveAgent } from './resolve';
 import type { AgentSource } from './sources/source';
 import type { RawRun, ToolStats } from './transcripts/extract';
+import {
+  latencyDistribution,
+  readTelemetry,
+  type LatencyDistribution,
+  type RunTelemetry,
+} from './transcripts/telemetry';
 
 export type { ToolStats } from './transcripts/extract';
 
 /** A non-fatal observation about a run that is kept rather than dropped. */
 export type RunTag = 'incomplete' | 'orphan';
+
+/** Persisted per-run telemetry: the parsed turns plus the derived latency. */
+export interface RunTelemetrySummary extends RunTelemetry {
+  readonly latency: LatencyDistribution | undefined;
+}
 
 /** An attributed, snapshotted run ready to persist. */
 export interface Run {
@@ -45,6 +57,8 @@ export interface Run {
   /** Definition content at run time, or `null` when not found (orphan). */
   readonly definitionSnapshot: string | null;
   readonly tags: readonly RunTag[];
+  /** Per-run telemetry from the sub-transcript; absent when not locatable. */
+  readonly telemetry?: RunTelemetrySummary;
 }
 
 /**
@@ -73,13 +87,15 @@ export function assembleRun(
     tags.push('orphan');
   }
 
+  const sidechainPath = sidechainPathFor(raw, transcriptPath);
+
   return {
     identityKey: identityKey(identity),
     runId: raw.agentId,
     agentName: identity.name,
     cwd: raw.cwd,
     sessionId: raw.sessionId,
-    sidechainPath: sidechainPathFor(raw, transcriptPath),
+    sidechainPath,
     timestamp: raw.timestamp,
     status: raw.status,
     totalDurationMs: raw.totalDurationMs,
@@ -88,7 +104,21 @@ export function assembleRun(
     toolStats: raw.toolStats,
     definitionSnapshot,
     tags,
+    telemetry: readRunTelemetry(sidechainPath),
   };
+}
+
+/**
+ * Parse the run's per-turn telemetry from its sub-transcript, or `undefined`
+ * when the sidechain is missing (interrupted/orphan runs, or rotated history).
+ * The latency distribution is derived from the parsed turns at the same time.
+ */
+function readRunTelemetry(sidechainPath: string | undefined): RunTelemetrySummary | undefined {
+  if (sidechainPath === undefined || !existsSync(sidechainPath)) {
+    return undefined;
+  }
+  const telemetry = readTelemetry(sidechainPath);
+  return { ...telemetry, latency: latencyDistribution(telemetry.turns) };
 }
 
 /**

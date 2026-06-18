@@ -12,16 +12,20 @@ import type { Command } from 'commander';
 import {
   aggregateMetrics,
   type AgentSummary,
+  type DefinitionChangeDelta,
+  definitionChangeDeltas,
   ingest,
   NoteStore,
   type Run,
   type Score,
+  type RunTelemetrySummary,
   type ScoreBand,
   scoreRun,
   ScoreStore,
   SourceRegistry,
   summarizeAgents,
 } from '../../core/index';
+import { signed, signedPercent } from '../format';
 import type { CliContext } from './source';
 
 export function registerShowCommand(program: Command, ctx: CliContext): void {
@@ -90,11 +94,84 @@ function printAgent(
     ctx.out(`  ${chalk.bold('note:')} ${note.body.replace(/\n/g, '\n  ')}`);
   }
 
+  // A "definition changed" marker is shown before the first run of each new
+  // definition version, carrying the before/after metric delta.
+  const markerByRunId = new Map<string, DefinitionChangeDelta>();
+  for (const delta of definitionChangeDeltas(runs, scoreStore)) {
+    const firstAfter = delta.after.runs[0];
+    if (firstAfter !== undefined) {
+      markerByRunId.set(firstAfter.runId, delta);
+    }
+  }
+
   ctx.out('  runs:');
-  for (const run of runs) {
+  for (const run of [...runs].sort(byTimestamp)) {
+    const marker = markerByRunId.get(run.runId);
+    if (marker !== undefined) {
+      ctx.out(`    ${formatDefinitionChange(marker)}`);
+    }
     ctx.out(`    ${formatRun(run)}`);
     ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
+    const telemetry = run.telemetry === undefined ? undefined : formatTelemetry(run.telemetry);
+    if (telemetry !== undefined) {
+      ctx.out(`      ${chalk.dim(telemetry)}`);
+    }
   }
+}
+
+/** One-line per-run telemetry, or `undefined` when there is nothing to show. */
+function formatTelemetry(telemetry: RunTelemetrySummary): string | undefined {
+  const parts: string[] = [];
+  if (telemetry.turns.length > 0) {
+    const tokens = telemetry.turns.reduce(
+      (acc, turn) => ({
+        input: acc.input + turn.usage.inputTokens,
+        output: acc.output + turn.usage.outputTokens,
+        cacheRead: acc.cacheRead + turn.usage.cacheReadTokens,
+      }),
+      { input: 0, output: 0, cacheRead: 0 },
+    );
+    parts.push(`tokens in ${tokens.input} / out ${tokens.output} / cache-read ${tokens.cacheRead}`);
+  }
+  if (telemetry.latency !== undefined) {
+    parts.push(`latency p50 ${telemetry.latency.p50Ms}ms p95 ${telemetry.latency.p95Ms}ms`);
+  }
+  if (telemetry.stopReason !== undefined) {
+    parts.push(`stop ${telemetry.stopReason}`);
+  }
+  if (telemetry.filesEdited.length > 0) {
+    parts.push(`edits ${telemetry.filesEdited.length}`);
+  }
+  if (telemetry.retryLoops > 0) {
+    parts.push(`retries ${telemetry.retryLoops}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : undefined;
+}
+
+/** Order runs chronologically; runs without a timestamp sort last. */
+function byTimestamp(a: Run, b: Run): number {
+  if (a.timestamp === b.timestamp) {
+    return 0;
+  }
+  if (a.timestamp === undefined) {
+    return 1;
+  }
+  if (b.timestamp === undefined) {
+    return -1;
+  }
+  return a.timestamp < b.timestamp ? -1 : 1;
+}
+
+/** One-line definition-change marker with the before/after deltas. */
+function formatDefinitionChange(delta: DefinitionChangeDelta): string {
+  const parts = [
+    `composite ${signed(delta.compositeDelta)}`,
+    `terminal ${signedPercent(delta.terminalSuccessRateDelta)}`,
+    `tool-errors ${signed(delta.toolErrorCountDelta)}`,
+    `tokens ${signed(delta.tokenTotalDelta)}`,
+  ];
+  const confidence = delta.lowConfidence ? chalk.yellow(' [low confidence]') : '';
+  return `${chalk.cyan('── definition changed ──')} ${parts.join(' · ')}${confidence}`;
 }
 
 const BAND_COLOR: Record<ScoreBand, (s: string) => string> = {
