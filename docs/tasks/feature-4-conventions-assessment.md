@@ -57,7 +57,7 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 **Depends on:** 3, 4
 **Estimate:** 2
 **Notes:** Reqs 16–18. Enumerates `<source.agentsDir>/*.md` and reuses `loadDefinitionSnapshot` + identity from Feature 1. Holds the orchestration; checks stay pure in Task 4.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 6: CLI surface — report violations + staleness
 
