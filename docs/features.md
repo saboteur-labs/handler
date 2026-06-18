@@ -59,6 +59,22 @@ Each feature below is a vertical slice — data, logic, and interface — that c
 
 ---
 
+## v1 follow-on features
+
+These are **beyond the MVP** (spec Reqs 1–21) and are not part of the milestone above. Captured here so the v1 slice is tracked; `docs/specs/feature-6-richer-run-record.md` is the authoritative spec.
+
+### Feature 6: Richer run record & definition-change correlation
+
+**Value:** A developer gets detailed per-run telemetry (per-turn tokens, latency distribution, tool I/O with `Bash` exit codes/errors, files edited, stop reason, model, planning, error→retry loops) and a trustworthy before/after metric delta whenever they edit an agent's definition — all deterministic, local, and observe-only.
+**Vertical slice:** data (enriched run-store fields behind a schema bump + re-ingest backfill; runs grouped by definition-snapshot version) / logic (deeper sub-transcript + `Task`-result extraction with schema guarding; definition-change detection via stored snapshots; aggregate-by-version delta over the Feature 3 composite + components + token total, same-rubric-version, low-confidence flag) / interface (inline "definition changed" marker in `show`; new `handler diff <agent>`).
+**Requirements covered:** net-new v1 (extends `docs/spec.md`); see feature spec Reqs 1–7.
+**User stories:** US-R1, US-R2.
+**Depends on:** Feature 2 (run store, transcript parsing, per-run definition snapshots), Feature 3 (behavioral composite consumed by the delta).
+**Branch suggestion:** `feat/richer-run-record`
+**Notes:** Reuses data handler already has on disk — no new data source, no network, no agent editing. The delta's trustworthiness comes from aggregating by definition-snapshot version (not single-run pairs) and same-rubric-version comparison, not from adding more metrics. Backfill only reaches runs whose transcripts still exist; older thin runs stay thin.
+
+---
+
 ## Coverage check
 
 - **Requirements covered:**

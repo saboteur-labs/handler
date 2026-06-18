@@ -22,9 +22,12 @@ interface RunStoreFile {
  * Run-store schema version. The store is a regenerable cache rebuilt from
  * transcripts, so a store written under a different version is discarded rather
  * than migrated. Bump this whenever the stored `Run` shape changes (it became
- * 2 when runs gained `cwd`/`sessionId`/`sidechainPath` for scoring).
+ * 2 when runs gained `cwd`/`sessionId`/`sidechainPath` for scoring, and 3 when
+ * they gained per-run `telemetry`). The bump is also the backfill trigger: a
+ * stale store is discarded and the next ingest rebuilds it from transcripts
+ * with the new fields populated for every run whose sub-transcript still exists.
  */
-export const RUN_STORE_VERSION = 2;
+export const RUN_STORE_VERSION = 3;
 
 /** Default run-store location: `~/.handler/runs.json`. */
 export function defaultRunStorePath(): string {
