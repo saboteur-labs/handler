@@ -66,8 +66,8 @@ Since this is the repo's first feature, it includes the one-time project scaffol
 **Done when:** among registered repo sources whose path is an ancestor of `cwd`, the nearest wins; with no matching repo source it falls back to the user-level source; built-in/plugin names are excluded (Task 2); tests cover nested repo sources, no-match fallback, and a denylisted name.
 **Depends on:** 2, 4, 5
 **Estimate:** 3
-**Notes:** This is Feature 1's integration heart and is consumed by Feature 2 at ingest time; it is library-only (no CLI surface in this feature). Highest-uncertainty task — exercise tie/nesting cases explicitly.
-**Done:** [ ]
+**Notes:** This is Feature 1's integration heart and is consumed by Feature 2 at ingest time; it is library-only (no CLI surface in this feature). Highest-uncertainty task — exercise tie/nesting cases explicitly. `resolveAgent(name, cwd, sources)` returns `AgentIdentity | null` (null for a builtin name or no match); ancestor check is segment-aware via `path.relative`; "nearest" = deepest ancestor (longest root, valid because ancestors of one cwd form a chain). Fallback uses the registered user source; no user source registered → null.
+**Done:** [x]
 
 ### Task 7: CLI `source register` / `source list` (Req 5)
 
