@@ -91,6 +91,7 @@ describe('handler CLI: show command (Req 11)', () => {
       storePath,
       projectsRoot,
       scoreStorePath: join(dir, 'scores.json'),
+      noteStorePath: join(dir, 'notes.json'),
       out: (line) => out.push(line),
     });
 
@@ -125,6 +126,22 @@ describe('handler CLI: show command (Req 11)', () => {
     expect(report).toMatch(/\b(PASS|WARN|FAIL)\b/);
     // the interrupted run (agent-2) has no sidechain and is unscored
     expect(report).toMatch(/unscored/);
+  });
+
+  it('surfaces an agent note inline, and omits the line when there is none', async () => {
+    await invoke(['source', 'register', repo]);
+
+    // No note yet: the show output carries no note line.
+    out.length = 0;
+    await invoke(['show', 'reviewer']);
+    expect(out.join('\n')).not.toMatch(/note:/);
+
+    await invoke(['note', 'set', 'reviewer', '--body', 'remember to widen scope']);
+    out.length = 0;
+    await invoke(['show', 'reviewer']);
+    const report = out.join('\n');
+    expect(report).toMatch(/note:/);
+    expect(report).toContain('remember to widen scope');
   });
 
   it('lists the sources when the agent name is ambiguous', async () => {

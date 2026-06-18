@@ -9,8 +9,8 @@
 /** Current handler version. Kept in sync with `package.json`. */
 export const VERSION = '0.0.0';
 
-export type { AgentSummary } from './agents';
-export { summarizeAgents } from './agents';
+export type { AgentResolution, AgentSummary, SourceFilter } from './agents';
+export { resolveAgentByName, summarizeAgents } from './agents';
 export { BUILTIN_AGENT_NAMES, isBuiltinAgent } from './denylist';
 export { ingest } from './ingest';
 export type { IngestOptions } from './ingest';
@@ -25,6 +25,8 @@ export type { CheckResult, CheckStatus, Score, ScoreBand } from './scoring/rubri
 export { RUBRIC_VERSION } from './scoring/rubric';
 export { scoreRun } from './scoring/score';
 export { defaultScoreStorePath, ScoreStore } from './store/score-store';
+export type { Note } from './store/note-store';
+export { defaultNotePath, NoteStore } from './store/note-store';
 export type { AgentAssessment, AssessOptions, ConventionsAssessment } from './conventions/assess';
 export { assessConventions } from './conventions/assess';
 export type { ConventionSmell, ConventionViolation, RuleId } from './conventions/checks';
