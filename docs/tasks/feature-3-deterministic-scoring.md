@@ -46,8 +46,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** thrash = distinct `(tool, normalized-args)` groups with ≥3 occurrences (args JSON-canonicalized key-sorted/whitespace-stripped; `Bash` by trimmed command); denial/error counts and terminal status (from `Run.status`) produced; tests cover the thrash threshold boundary and Bash normalization.
 **Depends on:** 1, 2
 **Estimate:** 3
-**Notes:** Covers Req 7 checks plus terminal (Req 6) and denials (Req 5).
-**Done:** [ ]
+**Notes:** Covers Req 7 checks plus terminal (Req 6) and denials (Req 5). Thrash signature: `Bash` by trimmed command, others by recursively key-sorted canonical JSON; threshold 3; counts distinct groups.
+**Done:** [x]
 
 ### Task 5: Scope checks — adherence, utilization, undeclared fallback
 
