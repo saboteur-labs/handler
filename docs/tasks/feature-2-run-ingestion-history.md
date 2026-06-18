@@ -77,7 +77,7 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Depends on:** 2, 3, 5, 6
 **Estimate:** 3
 **Notes:** This is the lazy-on-read entry (Req 8) the CLI calls before reading. Wires Tasks 2/3/5/6; no new parsing logic of its own.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 8: Metric aggregation
 
