@@ -36,8 +36,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** a snapshot with `tools: A, B` yields `{A, B}`; a snapshot with no `tools` key yields the undeclared marker; absent/garbled frontmatter is handled without throwing.
 **Depends on:** none
 **Estimate:** 2
-**Notes:** Minimal frontmatter read scoped to `tools` only. Feature 4 needs fuller frontmatter parsing later — factor the frontmatter split so it can be shared.
-**Done:** [ ]
+**Notes:** Minimal frontmatter read scoped to `tools` only. Feature 4 needs fuller frontmatter parsing later — `extractFrontmatter` is exported for that reuse. Handles inline comma list, bracket array, and block sequence; absent/empty/garbled → undeclared. Verified against a real agent definition (no `tools` field → undeclared).
+**Done:** [x]
 
 ### Task 4: Activity checks — denials, errors, thrash, terminal status
 
