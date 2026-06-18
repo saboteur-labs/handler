@@ -66,8 +66,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** `Write`/`Edit` targets (`input.file_path`) and destructive `Bash` targets resolved against `cwd` and flagged when outside the subtree; reads are never flagged; tests cover in-subtree (ok), out-of-subtree write (flagged), and a destructive `Bash` outside (flagged).
 **Depends on:** 1, 2
 **Estimate:** 5
-**Notes:** Highest-logic task — needs a deterministic destructive-`Bash` recogniser (`rm`, `mv`, redirections, etc.) and robust path resolution (reuse `normalizePath`/`path.relative` ancestor logic from F1's `resolve`). Req 8.
-**Done:** [ ]
+**Notes:** Highest-logic task — needs a deterministic destructive-`Bash` recogniser (`rm`, `mv`, redirections, etc.) and robust path resolution (reuse `normalizePath`/`path.relative` ancestor logic from F1's `resolve`). Req 8. Excludes fd-dups (`2>&1`) and `/dev` sinks. Known limitation: in-command `cd` is not tracked. Verified on real data: 15 precise violations across 40 sidechains, all the agent-memory dir, zero redirection false positives.
+**Done:** [x]
 
 ### Task 7: Rubric — composite, band, and breakdown
 
