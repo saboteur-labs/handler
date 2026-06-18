@@ -27,6 +27,7 @@ Builds on Feature 1 (identity tuple + `identityKey`) and Feature 2 (`summarizeAg
 **Depends on:** none
 **Estimate:** 2
 **Notes:** Req 8, Req 6 (CLI must report ambiguous/unknown clearly), Req 21. Reuse `summarizeAgents(runs)` (carries `sourceType`/`sourcePath`/`name`) and build the identity from a matched summary so note resolution stays consistent with `show`/`list`. `show.ts` may later be refactored onto this helper, but that refactor is out of scope for this task.
+**Done:** [x]
 
 ### Task 3: `note set` + `note show` commands
 

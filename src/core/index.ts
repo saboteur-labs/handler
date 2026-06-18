@@ -9,8 +9,8 @@
 /** Current handler version. Kept in sync with `package.json`. */
 export const VERSION = '0.0.0';
 
-export type { AgentSummary } from './agents';
-export { summarizeAgents } from './agents';
+export type { AgentResolution, AgentSummary, SourceFilter } from './agents';
+export { resolveAgentByName, summarizeAgents } from './agents';
 export { BUILTIN_AGENT_NAMES, isBuiltinAgent } from './denylist';
 export { ingest } from './ingest';
 export type { IngestOptions } from './ingest';
