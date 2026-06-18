@@ -1,6 +1,6 @@
 {
   "name": "handler",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Observability and evaluation for the Claude Code subagents you author",
   "type": "module",
   "license": "UNLICENSED",
