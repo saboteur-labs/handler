@@ -11,6 +11,7 @@ run(process.argv.slice(2), {
   storePath: process.env.HANDLER_STORE,
   scoreStorePath: process.env.HANDLER_SCORES,
   conventionsPath: process.env.HANDLER_CONVENTIONS,
+  noteStorePath: process.env.HANDLER_NOTES,
 })
   .then((code) => {
     process.exitCode = code;

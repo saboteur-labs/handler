@@ -67,6 +67,7 @@ Builds on Feature 1 (identity tuple + `identityKey`) and Feature 2 (`summarizeAg
 **Depends on:** 3, 4, 5
 **Estimate:** 1
 **Notes:** Mirrors the `HANDLER_SCORES`/`HANDLER_CONVENTIONS` wiring added in Features 3–4. Pure plumbing; no new behavior.
+**Done:** [x]
 
 ---
 
