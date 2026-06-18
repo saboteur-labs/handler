@@ -86,8 +86,8 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 **Done when:** a skill-generated artifact is committed; a fresh install runs `handler conventions` and gets real violations (not "missing conventions"); `assessConventions`, the conventions store, and types are exported from the core barrel; `npm test`/`typecheck`/`lint`/`build` are clean.
 **Depends on:** 5, 6, 7
 **Estimate:** 2
-**Notes:** Spec FR9 — ship a skill-generated artifact pre-merge. Decide the shipped-artifact resolution (bundled asset path vs. seeded into `~/.handler` on first run); the loader's default-path fallback should locate the shipped copy when `~/.handler/conventions.json` is absent.
-**Done:** [ ]
+**Notes:** Spec FR9 — ship a skill-generated artifact pre-merge. Decide the shipped-artifact resolution (bundled asset path vs. seeded into `~/.handler` on first run); the loader's default-path fallback should locate the shipped copy when `~/.handler/conventions.json` is absent. **Resolution chosen:** the skill-generated artifact is committed at `src/core/conventions/default-conventions.json` and imported into the store (inlined into the `dist` bundle by tsdown/vite — no fragile runtime path resolution); `loadConventionsWithDefault` returns it whenever the user artifact is absent (a present-but-corrupt user file keeps its degraded signal). Verified end-to-end against the built CLI: a fresh install with no `~/.handler/conventions.json` prints `conventions: fresh` with real per-agent violations. `.claude/**` excluded from ESLint (skill scripts run under Node, not the TS graph).
+**Done:** [x]
 
 ---
 

@@ -16,6 +16,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import { readJsonFile } from '../store/json-store';
+import shippedConventions from './default-conventions.json';
 
 /** Distilled rule set the convention checks (16a–e) are parameterized by. */
 export interface ConventionRules {
@@ -75,6 +76,22 @@ export function loadConventions(filePath: string = defaultConventionsPath()): Lo
     return { status: 'missing', reason: 'absent' };
   }
   return parseArtifact(raw);
+}
+
+/**
+ * Load the conventions, falling back to the shipped default when the user has
+ * no artifact yet. This is what handler's checks read in normal use: a fresh
+ * install (no `~/.handler/conventions.json`) still gets real violations from the
+ * bundled default rather than a "missing" result. A user artifact that is
+ * present but corrupt/wrong-version is *not* masked — its degraded state passes
+ * through, so a real problem stays visible instead of being silently replaced.
+ */
+export function loadConventionsWithDefault(filePath?: string): LoadedConventions {
+  const loaded = loadConventions(filePath);
+  if (loaded.status === 'missing' && loaded.reason === 'absent') {
+    return parseArtifact(shippedConventions);
+  }
+  return loaded;
 }
 
 function parseArtifact(raw: unknown): LoadedConventions {

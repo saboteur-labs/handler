@@ -78,7 +78,19 @@ describe('handler CLI: conventions command (Reqs 16-18)', () => {
     expect(report).toContain('16b');
   });
 
-  it('prints a stale header instructing the user to run the sync skill when conventions are missing', async () => {
+  it('prints a stale header instructing the user to run the sync skill when the artifact is corrupt', async () => {
+    writeFileSync(join(agentsDir, 'code-reviewer.md'), cleanDef('code-reviewer'), 'utf8');
+    writeFileSync(conventionsPath, '{ not valid json', 'utf8');
+    await invoke(['source', 'register', repo]);
+    out.length = 0;
+
+    expect(await invoke(['conventions'])).toBe(0);
+    const report = out.join('\n');
+    expect(report).toMatch(/conventions:\s+stale \(missing\)/);
+    expect(report).toMatch(/sync skill/);
+  });
+
+  it('falls back to the shipped default so a fresh install gets real results', async () => {
     writeFileSync(join(agentsDir, 'code-reviewer.md'), cleanDef('code-reviewer'), 'utf8');
     await invoke(['source', 'register', repo]);
     out.length = 0;
@@ -90,7 +102,8 @@ describe('handler CLI: conventions command (Reqs 16-18)', () => {
     });
     expect(code).toBe(0);
     const report = out.join('\n');
-    expect(report).toMatch(/conventions:\s+stale \(missing\)/);
-    expect(report).toMatch(/sync skill/);
+    expect(report).not.toMatch(/stale \(missing\)/);
+    expect(report).toContain('code-reviewer');
+    expect(report).toContain('no violations');
   });
 });

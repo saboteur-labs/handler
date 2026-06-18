@@ -21,7 +21,7 @@ import { loadDefinitionSnapshot } from '../snapshot';
 import type { AgentSource } from '../sources/source';
 import type { ConventionSmell, ConventionViolation } from './checks';
 import { checkConventions } from './checks';
-import { loadConventions } from './conventions-store';
+import { loadConventionsWithDefault } from './conventions-store';
 import type { StalenessState } from './staleness';
 import { evaluateStaleness } from './staleness';
 
@@ -46,7 +46,7 @@ export interface AssessOptions {
 
 /** Assess every registered source's definitions against the conventions. */
 export function assessConventions(options: AssessOptions): ConventionsAssessment {
-  const loaded = loadConventions(options.conventionsPath);
+  const loaded = loadConventionsWithDefault(options.conventionsPath);
   const staleness = evaluateStaleness(loaded);
   if (loaded.status === 'missing') {
     return { staleness, agents: [] };

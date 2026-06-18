@@ -71,12 +71,24 @@ describe('assessConventions', () => {
     );
   });
 
-  it('returns the missing staleness state with no agents when conventions are absent', () => {
+  it('falls back to the shipped default when no user artifact exists', () => {
     writeFileSync(join(agentsDir, 'code-reviewer.md'), cleanDef('code-reviewer'), 'utf8');
     const result = assessConventions({
       sources: [repoSource(dir)],
       conventionsPath: join(dir, 'does-not-exist.json'),
     });
+
+    // The shipped default supplies the rules — a fresh install gets real
+    // results, not a "missing" state. The clean definition passes.
+    expect(result.staleness).not.toBe('missing');
+    expect(result.agents.map((a) => a.identity.name)).toEqual(['code-reviewer']);
+    expect(result.agents[0]?.violations).toEqual([]);
+  });
+
+  it('returns the missing staleness state with no agents when the user artifact is corrupt', () => {
+    writeFileSync(join(agentsDir, 'code-reviewer.md'), cleanDef('code-reviewer'), 'utf8');
+    writeFileSync(conventionsPath, '{ not valid json', 'utf8');
+    const result = assessConventions({ sources: [repoSource(dir)], conventionsPath });
 
     expect(result.staleness).toBe('missing');
     expect(result.agents).toEqual([]);

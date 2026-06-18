@@ -4,7 +4,11 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ConventionsArtifact } from './conventions-store';
-import { CONVENTIONS_STORE_VERSION, loadConventions } from './conventions-store';
+import {
+  CONVENTIONS_STORE_VERSION,
+  loadConventions,
+  loadConventionsWithDefault,
+} from './conventions-store';
 
 function artifact(overrides: Partial<ConventionsArtifact> = {}): ConventionsArtifact {
   return {
@@ -72,5 +76,44 @@ describe('loadConventions', () => {
       'utf8',
     );
     expect(loadConventions(file)).toEqual({ status: 'missing', reason: 'version-mismatch' });
+  });
+});
+
+describe('loadConventionsWithDefault', () => {
+  let dir: string;
+  let file: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'handler-conventions-'));
+    file = join(dir, 'conventions.json');
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('falls back to the shipped default when no user artifact exists', () => {
+    const loaded = loadConventionsWithDefault(file);
+    expect(loaded.status).toBe('loaded');
+    if (loaded.status === 'loaded') {
+      // The shipped artifact carries the real distilled rules.
+      expect(loaded.artifact.rules.requiredKeys).toEqual(['name', 'description']);
+      expect(loaded.artifact.rules.descriptionMinLength).toBeGreaterThan(0);
+      expect(loaded.artifact.rules.cuePatterns.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('prefers a present user artifact over the shipped default', () => {
+    writeFileSync(file, JSON.stringify(artifact({ sourceHash: 'user-hash' })), 'utf8');
+    const loaded = loadConventionsWithDefault(file);
+    expect(loaded.status).toBe('loaded');
+    if (loaded.status === 'loaded') {
+      expect(loaded.artifact.sourceHash).toBe('user-hash');
+    }
+  });
+
+  it('does not mask a corrupt user artifact with the shipped default', () => {
+    writeFileSync(file, '{ not valid json', 'utf8');
+    expect(loadConventionsWithDefault(file)).toEqual({ status: 'missing', reason: 'malformed' });
   });
 });

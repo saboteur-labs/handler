@@ -39,6 +39,7 @@ export {
   CONVENTIONS_STORE_VERSION,
   defaultConventionsPath,
   loadConventions,
+  loadConventionsWithDefault,
 } from './conventions/conventions-store';
 export type { StalenessState } from './conventions/staleness';
 export { evaluateStaleness, hashRules, STALE_TTL_DAYS } from './conventions/staleness';
