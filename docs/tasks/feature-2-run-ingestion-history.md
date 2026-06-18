@@ -47,7 +47,7 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Depends on:** none
 **Estimate:** 2
 **Notes:** Stores content, not a path (Req 9). `null` is the orphan signal Task 5 tags on (Req 6). Uses F1's `AgentSource.agentsDir`.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 5: Attributed run model + assembly
 
