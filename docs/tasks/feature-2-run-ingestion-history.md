@@ -67,7 +67,7 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Depends on:** 5
 **Estimate:** 3
 **Notes:** Build on F1's `json-store` (`readJsonFile`/`writeJsonFile`); default `~/.handler/runs.json`, overridable like the source registry. Versioned stored shape (`{version:1, runs:[…]}`). Append-only (Reqs 7, 8, 9).
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 7: Lazy ingestion orchestrator
 
