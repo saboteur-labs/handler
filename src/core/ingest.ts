@@ -34,7 +34,7 @@ export function ingest(options: IngestOptions): Run[] {
   const store = new RunStore(options.storePath);
   for (const transcript of discoverTranscripts(options.projectsRoot)) {
     for (const raw of extractRuns(readJsonl(transcript))) {
-      const run = assembleRun(raw, options.sources);
+      const run = assembleRun(raw, options.sources, transcript);
       if (run !== null) {
         store.add(run);
       }

@@ -16,8 +16,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** a stored `Run` includes `cwd`, `sessionId`, and `sidechainPath` resolving to `<projectDir>/<sessionId>/subagents/agent-<agentId>.jsonl`; tests assert the locator is correct for a fixture transcript.
 **Depends on:** none (builds on Feature 2)
 **Estimate:** 3
-**Notes:** `sessionId` comes from the entry; `sidechainPath` is derived in `ingest` from the transcript path + sessionId + agentId. Ripples to the Feature 2 exact-match `Run`/`RawRun` tests (mechanical). Req 11.
-**Done:** [ ]
+**Notes:** `sessionId` comes from the entry; `sidechainPath` is derived in `ingest` from the transcript path + sessionId + agentId. Ripples to the Feature 2 exact-match `Run`/`RawRun` tests (mechanical). Req 11. Verified against real data: all 17 ingested runs' `sidechainPath` resolve to an existing sidechain file.
+**Done:** [x]
 
 ### Task 2: Run-activity parser (sidechain → tool calls, denials, errors)
 

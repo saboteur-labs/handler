@@ -13,6 +13,7 @@ function completedEntry(overrides: Record<string, unknown> = {}): Record<string,
   return {
     type: 'user',
     cwd: '/Users/me/repo',
+    sessionId: 'sess-1',
     timestamp: '2026-06-17T00:00:00.000Z',
     message: { role: 'user', content: [] },
     toolUseResult: {
@@ -37,6 +38,7 @@ describe('extractRuns', () => {
       agentType: 'Explore',
       agentId: 'a93f6fef4ae63b956',
       cwd: '/Users/me/repo',
+      sessionId: 'sess-1',
       timestamp: '2026-06-17T00:00:00.000Z',
       status: 'completed',
       totalDurationMs: 106317,
