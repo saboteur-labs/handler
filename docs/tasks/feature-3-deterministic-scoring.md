@@ -56,8 +56,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** used tools outside the granted set are flagged; granted tools never used are reported; when scope is undeclared, adherence and utilization are marked N/A and an "undeclared scope" flag is raised; tests cover declared, violation, unused, and undeclared cases.
 **Depends on:** 2, 3
 **Estimate:** 3
-**Notes:** Reqs 4, 9, 10 (Req 15 in the product spec).
-**Done:** [ ]
+**Notes:** Reqs 4, 9, 10 (Req 15 in the product spec). Undeclared scope → `applicable:false` + `undeclaredScope:true`, empty arrays; results sorted and used-tools de-duplicated.
+**Done:** [x]
 
 ### Task 6: Boundary checks — write/path/scope
 
