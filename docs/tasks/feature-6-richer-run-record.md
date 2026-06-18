@@ -66,6 +66,7 @@ Builds on Feature 2 (run store, `RawRun`/`Run`, transcript parsing, definition s
 **Depends on:** 5
 **Estimate:** 5
 **Notes:** Reads cached `Score` (composite + per-check breakdown supplies tool-error/status components) and `run.totalTokens` — does not need Tasks 1–4. Define the minimum-run constant (e.g. `< 2` per side → low-confidence) and document it. Label components as composite inputs, not independent signals (per spec Req 5). Req 5.
+**Done:** [x] — `correlation/delta.ts`: `definitionChangeDeltas(runs, scoreStore)` aggregates runs by definition version and emits a delta per known→known change point. Composite + terminal-status come from `scoreRun` (recomputes under current `RUBRIC_VERSION` → always same-rubric); tool-error count from `run.telemetry.toolErrors` (the same signal feeding the composite's tool-errors check); token total from `run.totalTokens`. `lowConfidence` when either side has < `MIN_RUNS_FOR_CONFIDENCE` (2) scored runs; orphan/unknown boundaries skipped. 5 tests.
 
 ### Task 7: `handler show` — definition-changed marker + delta
 
