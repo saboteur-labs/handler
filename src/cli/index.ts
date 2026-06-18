@@ -33,6 +33,8 @@ export interface RunOptions {
   readonly conventionsPath?: string;
   /** Note-store location; defaults to the core default. */
   readonly noteStorePath?: string;
+  /** Tier B store location; defaults to the core default. */
+  readonly tierBStorePath?: string;
   readonly out?: (line: string) => void;
   readonly err?: (line: string) => void;
   /** Reads all of stdin to a string; defaults to draining `process.stdin`. */
@@ -79,6 +81,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     scoreStorePath: options.scoreStorePath,
     conventionsPath: options.conventionsPath,
     noteStorePath: options.noteStorePath,
+    tierBStorePath: options.tierBStorePath,
     readStdin: options.readStdin ?? readStdin,
     runEditor: options.runEditor ?? runEditor,
   };

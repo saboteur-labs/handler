@@ -240,4 +240,133 @@ describe('handler CLI: show command (Req 11)', () => {
     expect(report).toContain(repo);
     expect(report).toContain(home);
   });
+
+  describe('Tier B section in show output', () => {
+    const invokeWithTierB = (args: string[]): Promise<number> =>
+      run(args, {
+        registryPath,
+        storePath,
+        projectsRoot,
+        scoreStorePath: join(dir, 'scores.json'),
+        noteStorePath: join(dir, 'notes.json'),
+        tierBStorePath: join(dir, 'tier-b.json'),
+        out: (line) => out.push(line),
+      });
+
+    it('shows "insufficient history" when there are not enough prior runs', async () => {
+      // Only one run (agent-1) and one incomplete (agent-2) — insufficient for Tier B reference.
+      await invokeWithTierB(['source', 'register', repo]);
+      out.length = 0;
+
+      expect(await invokeWithTierB(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+      expect(report).toMatch(/Tier B:.*insufficient history/);
+    });
+
+    it('shows applicable Tier B flags and contract status when there is sufficient history', async () => {
+      // Add history runs with earlier timestamps so they count as strictly-prior.
+      // We lower the min-runs threshold to 3 so only 3 prior runs are needed.
+      const projectDir = join(projectsRoot, '-encoded');
+      for (let i = 10; i < 13; i++) {
+        writeFileSync(
+          join(projectDir, `session${i}.jsonl`),
+          JSON.stringify({
+            type: 'user',
+            cwd: repo,
+            sessionId: `session${i}`,
+            timestamp: `2026-06-16T0${i - 10}:00:00.000Z`,
+            toolUseResult: {
+              status: 'completed',
+              agentId: `agent-${i}`,
+              agentType: 'reviewer',
+              totalDurationMs: 1000,
+              totalTokens: 500,
+              totalToolUseCount: 3,
+              toolStats: { readCount: 2 },
+            },
+          }),
+          'utf8',
+        );
+      }
+
+      await invokeWithTierB(['source', 'register', repo]);
+      out.length = 0;
+
+      const originalMinRuns = process.env['HANDLER_TIERB_MIN_RUNS'];
+      process.env['HANDLER_TIERB_MIN_RUNS'] = '3';
+      try {
+        expect(await invokeWithTierB(['show', 'reviewer'])).toBe(0);
+      } finally {
+        if (originalMinRuns === undefined) {
+          delete process.env['HANDLER_TIERB_MIN_RUNS'];
+        } else {
+          process.env['HANDLER_TIERB_MIN_RUNS'] = originalMinRuns;
+        }
+      }
+
+      const report = out.join('\n');
+      // The run on 2026-06-17 (agent-1) has 3 prior runs from 2026-06-16 — should be applicable.
+      expect(report).toMatch(/Tier B:.*tokens/);
+      expect(report).toMatch(/Tier B:.*duration/);
+      expect(report).toMatch(/Tier B:.*contract/);
+    });
+
+    it('shows n/a for contract when contract is not-applicable', async () => {
+      // Add history runs with earlier timestamps so they count as strictly-prior.
+      const projectDir = join(projectsRoot, '-encoded');
+      for (let i = 20; i < 22; i++) {
+        writeFileSync(
+          join(projectDir, `session${i}.jsonl`),
+          JSON.stringify({
+            type: 'user',
+            cwd: repo,
+            sessionId: `session${i}`,
+            timestamp: `2026-06-15T0${i - 20}:00:00.000Z`,
+            toolUseResult: {
+              status: 'completed',
+              agentId: `agent-${i}`,
+              agentType: 'reviewer',
+              totalDurationMs: 1000,
+              totalTokens: 500,
+              totalToolUseCount: 3,
+              toolStats: { readCount: 2 },
+            },
+          }),
+          'utf8',
+        );
+      }
+
+      await invokeWithTierB(['source', 'register', repo]);
+      out.length = 0;
+
+      const originalMinRuns = process.env['HANDLER_TIERB_MIN_RUNS'];
+      process.env['HANDLER_TIERB_MIN_RUNS'] = '2';
+      try {
+        expect(await invokeWithTierB(['show', 'reviewer'])).toBe(0);
+      } finally {
+        if (originalMinRuns === undefined) {
+          delete process.env['HANDLER_TIERB_MIN_RUNS'];
+        } else {
+          process.env['HANDLER_TIERB_MIN_RUNS'] = originalMinRuns;
+        }
+      }
+
+      const report = out.join('\n');
+      // contract n/a because agent definition has no structured output declaration
+      expect(report).toMatch(/contract n\/a|contract.*n\/a/);
+    });
+
+    it('shows Tier A score line unchanged alongside the Tier B section', async () => {
+      await invokeWithTierB(['source', 'register', repo]);
+      out.length = 0;
+
+      expect(await invokeWithTierB(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+      // Tier A score line is present
+      expect(report).toMatch(/score:/);
+      expect(report).toMatch(/\b(PASS|WARN|FAIL)\b/);
+      // Tier B section is also present
+      expect(report).toMatch(/Tier B:/);
+    });
+  });
 });

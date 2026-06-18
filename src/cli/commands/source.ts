@@ -28,6 +28,8 @@ export interface CliContext {
   readonly conventionsPath?: string;
   /** Note-store location; defaults to the core default. */
   readonly noteStorePath?: string;
+  /** Tier B store location; defaults to the core default. */
+  readonly tierBStorePath?: string;
   /** Reads all of stdin to a string; used when a note body is piped in. */
   readonly readStdin: () => Promise<string>;
   /** Opens `$EDITOR` on `filePath`, returning its exit code (`note edit`). */
