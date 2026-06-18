@@ -56,8 +56,8 @@ Since this is the repo's first feature, it includes the one-time project scaffol
 **Done when:** registering a source then listing returns it; the registry reloads persisted sources in a fresh instance; registering an already-registered normalized path does not duplicate it; tests cover add, list, reload, and dedupe.
 **Depends on:** 3
 **Estimate:** 3
-**Notes:** Append-only/SQLite is the architectural direction, but a minimal persisted store is acceptable for the source registry — keep the persistence boundary clean so Feature 2's run store can adopt the same store.
-**Done:** [ ]
+**Notes:** Append-only/SQLite is the architectural direction, but a minimal persisted store is acceptable for the source registry — keep the persistence boundary clean so Feature 2's run store can adopt the same store. Implemented as a JSON file store (`src/core/store/json-store.ts`) behind `SourceRegistry`; default location `~/.handler/sources.json`. Stored shape is versioned (`{version:1, sources:[{type, root}]}`) and load tolerates a malformed file.
+**Done:** [x]
 
 ### Task 6: cwd-nearest-ancestor resolution (Req 8 + Reqs 3, 4)
 
