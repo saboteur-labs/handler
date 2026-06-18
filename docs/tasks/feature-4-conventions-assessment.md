@@ -1,6 +1,6 @@
 # Task List: Feature 4 — Static definition assessment & conventions sync
 
-**Feature source:** `docs/specs/feature-4-conventions-assessment.md`
+**Feature source:** `docs/specs/mvp/feature-4-conventions-assessment.md`
 **Requirements covered:** spec Reqs 16, 17, 18, 19 (`docs/spec.md`)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md — failing test first, minimum code to pass, then refactor.

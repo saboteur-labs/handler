@@ -55,6 +55,7 @@ handler conventions
 # 3. See behavioral history once your agents have run
 handler list
 handler show code-reviewer
+handler trend code-reviewer        # how that agent's scores move over time
 ```
 
 ## Commands
@@ -108,6 +109,33 @@ List your agents and how many runs each has (built from ingested transcripts).
 ### `handler show <agent>`
 
 Show an agent's run history and metrics, including the per-run deterministic score.
+
+### `handler trend <agent>`
+
+Trend an agent's metrics and scores over time. By default it prints one row per
+run, oldest→newest, with the composite score, band, duration, tokens, and
+tool-use count. Incomplete runs and runs missing a timestamp are kept and
+tagged rather than dropped.
+
+```
+timestamp                  score  band  duration    tokens  tools  status
+2026-06-01T09:12:00.000Z   72     warn  18243ms     4821    7      completed
+2026-06-04T14:30:00.000Z   —      —     —           —       —      incomplete  [incomplete]
+2026-06-09T11:05:00.000Z   88     pass  9120ms      3140    5      completed
+```
+
+Flags:
+
+- `--bucket day|week` — aggregate into calendar-day or ISO-week (Monday-start)
+  buckets, one row per non-empty bucket with the run count and median composite
+  score, tokens, and duration. Incomplete runs count toward the bucket but are
+  excluded from the medians.
+- `--since <date>` — keep runs on or after the given ISO date (inclusive).
+- `--last <n>` — keep only the N most-recent runs. Composes with `--since`
+  (the date filter applies first).
+
+A single-run agent renders its one row without implying a trend; an agent with
+no runs prints a "no runs" message.
 
 ## Keeping conventions current
 

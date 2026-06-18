@@ -61,7 +61,7 @@ Each feature below is a vertical slice — data, logic, and interface — that c
 
 ## v1 follow-on features
 
-These are **beyond the MVP** (spec Reqs 1–21) and are not part of the milestone above. Captured here so the v1 slice is tracked; `docs/specs/feature-6-richer-run-record.md` is the authoritative spec.
+These are **beyond the MVP** (spec Reqs 1–21) and are not part of the milestone above. Captured here so the v1 slice is tracked; `docs/specs/mvp/feature-6-richer-run-record.md` is the authoritative spec.
 
 ### Feature 6: Richer run record & definition-change correlation
 

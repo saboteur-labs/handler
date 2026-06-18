@@ -1,6 +1,6 @@
 # Task List: Feature 3 — Deterministic behavioral scoring
 
-**Feature source:** `docs/specs/feature-3-deterministic-scoring.md`
+**Feature source:** `docs/specs/mvp/feature-3-deterministic-scoring.md`
 **Requirements covered:** spec Reqs 12, 13, 14, 15 (`docs/spec.md`)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md — failing test first, minimum code to pass, then refactor.

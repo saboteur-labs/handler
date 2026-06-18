@@ -1,6 +1,6 @@
 # Task List: Feature 5 — Per-agent notes
 
-**Feature source:** `docs/specs/feature-5-agent-notes.md`
+**Feature source:** `docs/specs/mvp/feature-5-agent-notes.md`
 **Requirements covered:** spec Reqs 20, 21 (`docs/spec.md`)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md — failing test first, minimum code to pass, then refactor.
