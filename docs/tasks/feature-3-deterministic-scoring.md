@@ -76,8 +76,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** given a set of check results, produces a deterministic breakdown + band + composite; weights and the band thresholds are documented constants; a `RUBRIC_VERSION` is exported; tests pin the composite/band for sample inputs.
 **Depends on:** 4, 5, 6
 **Estimate:** 3
-**Notes:** Reqs 1, 3. Fixed weights keep the number reproducible (no per-run tuning).
-**Done:** [ ]
+**Notes:** Reqs 1, 3. Fixed weights keep the number reproducible (no per-run tuning). Weights: tool-scope/path-boundary -25, terminal -20, denials/errors/thrash -10, utilization/undeclared -5; band = worst check severity. Verified over real data: bands 29 warn / 11 fail, composites 60–95, breakdowns interpretable.
+**Done:** [x]
 
 ### Task 8: Score annotation store (versioned)
 
