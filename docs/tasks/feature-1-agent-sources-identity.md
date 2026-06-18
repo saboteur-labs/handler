@@ -76,8 +76,8 @@ Since this is the repo's first feature, it includes the one-time project scaffol
 **Done when:** `handler source register <path>` registers a source and `handler source list` prints registered sources; an integration test drives the CLI and asserts output; the CLI contains no logic beyond argument parsing and calling core.
 **Depends on:** 5
 **Estimate:** 2
-**Notes:** Keeps the GUI-ready boundary — all behavior lives in core (Task 5).
-**Done:** [ ]
+**Notes:** Keeps the GUI-ready boundary — all behavior lives in core (Task 5). `run(argv, { registryPath, out, err })` (in `src/cli/index.ts`) is the testable entry with the error boundary; the shebang'd bin is `src/cli/main.ts` (so importing the module is side-effect-free), built to `dist/cli/index.js`. `source register [path] [--user]` and `source list`. Registry location is overridable via the `HANDLER_REGISTRY` env var. Path-is-a-directory validation lives at the CLI boundary (per patterns), throwing into the top-level error handler.
+**Done:** [x]
 
 ---
 
