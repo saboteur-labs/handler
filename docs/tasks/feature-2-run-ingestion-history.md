@@ -57,7 +57,7 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Depends on:** 3, 4
 **Estimate:** 3
 **Notes:** Ties Task 3 + F1 `resolveAgent`/`agentIdentity`/`identityKey` + Task 4. Keep-and-tag, never silently drop attributable runs (Req 6). Run id = `agentId`.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 6: Append-only run store
 
