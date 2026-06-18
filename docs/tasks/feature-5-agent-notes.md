@@ -57,6 +57,7 @@ Builds on Feature 1 (identity tuple + `identityKey`) and Feature 2 (`summarizeAg
 **Depends on:** 1, 2
 **Estimate:** 1
 **Notes:** Req 20 (read surface = both dedicated command and inline in `show`). Smallest slice; keep formatting consistent with the rest of `show`.
+**Done:** [x]
 
 ### Task 6: Env wiring, barrel exports, and green build
 

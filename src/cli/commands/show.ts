@@ -13,6 +13,7 @@ import {
   aggregateMetrics,
   type AgentSummary,
   ingest,
+  NoteStore,
   type Run,
   type Score,
   type ScoreBand,
@@ -82,6 +83,11 @@ function printAgent(
   const tools = Object.entries(metrics.toolStats);
   if (tools.length > 0) {
     ctx.out(`  tools: ${tools.map(([tool, count]) => `${tool} ${count}`).join(', ')}`);
+  }
+
+  const note = new NoteStore(ctx.noteStorePath).get(agent.identityKey);
+  if (note !== undefined) {
+    ctx.out(`  ${chalk.bold('note:')} ${note.body.replace(/\n/g, '\n  ')}`);
   }
 
   ctx.out('  runs:');
