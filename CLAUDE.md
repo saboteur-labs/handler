@@ -61,3 +61,5 @@ This is the load-bearing, non-obvious part — validated empirically against rea
 ## Git
 
 Active branch is `development`. The repo's history starts from the docs commit. Branch before committing on `development` only if asked; otherwise follow the user's lead on when to commit.
+
+Name new branches per the [Conventional Branch](https://conventionalbranch.org/) spec: `<type>/<description>`, where `type` is one of `feature`/`feat`, `bugfix`/`fix`, `hotfix`, `release`, or `chore`. Descriptions use only lowercase letters, digits, and hyphens (no underscores, no uppercase, no leading/trailing or consecutive hyphens); dots are allowed only in `release/` version numbers. Keep them short and descriptive, and include a ticket number when one applies (e.g. `feature/issue-123-attributed-history`). Trunk branches (`main`/`master`/`develop`) need no prefix.
