@@ -46,8 +46,8 @@ Since this is the repo's first feature, it includes the one-time project scaffol
 **Done when:** two agents with the same name in different sources produce distinct identities; same name+source produces equal identities and an identical serialized key; tests cover equality, inequality, and key stability.
 **Depends on:** 3
 **Estimate:** 2
-**Notes:** The serialized key is the join key reused by Features 3 (scores) and 5 (notes) — keep it deterministic and migration-safe.
-**Done:** [ ]
+**Notes:** The serialized key is the join key reused by Features 3 (scores) and 5 (notes) — keep it deterministic and migration-safe. `identityKey` is a fixed-order JSON array (`["<type>","<path>","<name>"]`); its format is pinned by a test and should be treated as a persisted contract.
+**Done:** [x]
 
 ### Task 5: Source registry — register & list (core) (Req 5)
 
