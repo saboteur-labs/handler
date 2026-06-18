@@ -53,3 +53,8 @@ export { evaluateStaleness, hashRules, STALE_TTL_DAYS } from './conventions/stal
 export { defaultRegistryPath, SourceRegistry } from './sources/registry';
 export type { AgentSource, SourceType } from './sources/source';
 export { repoSource, userSource } from './sources/source';
+export type { TrendRow } from './trend/series';
+export { buildTrendSeries } from './trend/series';
+export type { BucketGranularity, BucketRow } from './trend/bucket';
+export { bucket } from './trend/bucket';
+export { filterLast, filterSince } from './trend/window';

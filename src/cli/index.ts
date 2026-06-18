@@ -19,6 +19,7 @@ import { registerNoteCommand } from './commands/note';
 import { registerShowCommand } from './commands/show';
 import type { CliContext } from './commands/source';
 import { registerSourceCommand } from './commands/source';
+import { registerTrendCommand } from './commands/trend';
 
 export interface RunOptions {
   readonly registryPath?: string;
@@ -99,6 +100,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerDiffCommand(program, ctx);
   registerConventionsCommand(program, ctx);
   registerNoteCommand(program, ctx);
+  registerTrendCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });

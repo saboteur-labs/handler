@@ -10,7 +10,7 @@ The persistence already exists: `RunStore` (keyed by `(identityKey, runId)`) and
 
 ---
 
-### Task 1: Per-run trend series builder (core)
+### Task 1: Per-run trend series builder (core) ✓ COMPLETE
 
 **What:** A core function that folds an agent's runs + scores into a chronological per-run trend series: timestamp, composite score, band, duration, tokens, tool-use count.
 **Files:** `src/core/trend/series.ts`, test; export from `src/core/index.ts`.
@@ -19,7 +19,7 @@ The persistence already exists: `RunStore` (keyed by `(identityKey, runId)`) and
 **Estimate:** 3
 **Notes:** Reuse the `byTimestamp` sort semantics from `src/cli/commands/show.ts` (lift into core if shared). Satisfies Reqs 2, 3, 6, 7, 9.
 
-### Task 2: Day/week bucketed aggregation (core)
+### Task 2: Day/week bucketed aggregation (core) ✓ COMPLETE
 
 **What:** Aggregate a per-run series into day or week buckets: run count, median composite score, median tokens, median duration.
 **Files:** `src/core/trend/bucket.ts` (+ a small median helper, e.g. `src/core/trend/median.ts`), tests; export from `src/core/index.ts`.
@@ -28,7 +28,7 @@ The persistence already exists: `RunStore` (keyed by `(identityKey, runId)`) and
 **Estimate:** 3
 **Notes:** Median (not mean) per the spec — robust and consistent with Tier B's self-relative median direction. Define the week boundary explicitly (ISO week, Monday start) in a test. Satisfies Req 4.
 
-### Task 3: Window filters (core)
+### Task 3: Window filters (core) ✓ COMPLETE
 
 **What:** Pure filters that window a series before rendering/bucketing: `--since <ISO date>` and `--last <N>`.
 **Files:** `src/core/trend/window.ts`, test; export from `src/core/index.ts`.
@@ -37,7 +37,7 @@ The persistence already exists: `RunStore` (keyed by `(identityKey, runId)`) and
 **Estimate:** 1
 **Notes:** Keep these pure over the series so both per-run and bucketed paths reuse them. Satisfies Req 5.
 
-### Task 4: `trend` CLI command + formatting + graceful degradation
+### Task 4: `trend` CLI command + formatting + graceful degradation ✓ COMPLETE
 
 **What:** Register `handler trend <agent>` with per-run (default) and `--bucket day|week` output, `--since`/`--last` flags, and graceful degradation.
 **Files:** `src/cli/commands/trend.ts`, test; register in `src/cli/index.ts`; reuse `src/cli/format.ts`.
@@ -46,10 +46,10 @@ The persistence already exists: `RunStore` (keyed by `(identityKey, runId)`) and
 **Estimate:** 3
 **Notes:** Mirror `registerShowCommand` wiring (`SourceRegistry` + `ingest` + `ScoreStore` from `CliContext`). Satisfies Reqs 1, 8.
 
-### Task 5: End-to-end integration test
+### Task 5: End-to-end integration test ✓ COMPLETE
 
 **What:** A test exercising the full pipeline from fixture transcripts through `trend` output for per-run, bucketed, and windowed modes.
-**Files:** `src/cli/commands/trend.test.ts` (or a dedicated integration test), reusing existing transcript fixtures.
+**Files:** `src/cli/commands/trend.integration.test.ts`
 **Done when:** Seeding a fixture project with multiple dated runs for one agent and invoking the command produces correct per-run rows, a correct `--bucket week` aggregate, and a correct `--since`/`--last` window; `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all pass.
 **Depends on:** 4
 **Estimate:** 2
