@@ -106,8 +106,8 @@ Builds on Feature 2's run store, snapshots, and transcript parsing. Sidechain sh
 **Done when:** `handler show <agent>` prints, per run, the band, composite, and failing checks; an integration test over a fixture asserts the score appears; the command holds no scoring logic beyond calling core.
 **Depends on:** 9
 **Estimate:** 3
-**Notes:** Req 13. Follows the thin-CLI pattern established in Feature 2.
-**Done:** [ ]
+**Notes:** Req 13. Follows the thin-CLI pattern established in Feature 2. Score store path injectable via `HANDLER_SCORES`. Verified end-to-end against real data: `handler show` renders band/composite + failing checks citing exact out-of-scope write paths.
+**Done:** [x]
 
 ---
 

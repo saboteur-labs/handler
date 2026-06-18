@@ -22,6 +22,8 @@ export interface CliContext {
   readonly projectsRoot?: string;
   /** Run-store location; defaults to the core default. */
   readonly storePath?: string;
+  /** Score-store location; defaults to the core default. */
+  readonly scoreStorePath?: string;
 }
 
 interface RegisterOptions {

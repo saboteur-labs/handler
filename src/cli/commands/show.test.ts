@@ -18,9 +18,22 @@ describe('handler CLI: show command (Req 11)', () => {
     return JSON.stringify({
       type: 'user',
       cwd,
+      sessionId: 'session',
       timestamp: '2026-06-17T10:00:00.000Z',
       toolUseResult,
     });
+  }
+
+  /** Write a sidechain transcript for a run so it can be scored. */
+  function writeSidechain(agentId: string, ...blocks: unknown[]): void {
+    const subDir = join(projectsRoot, '-encoded', 'session', 'subagents');
+    mkdirSync(subDir, { recursive: true });
+    const entries = blocks.map((content) => ({ type: 'user', cwd: repo, message: { content } }));
+    writeFileSync(
+      join(subDir, `agent-${agentId}.jsonl`),
+      entries.map((e) => JSON.stringify(e)).join('\n'),
+      'utf8',
+    );
   }
 
   function completed(agentType: string, agentId: string, cwd: string): string {
@@ -63,6 +76,7 @@ describe('handler CLI: show command (Req 11)', () => {
       [completed('reviewer', 'agent-1', repo), interrupted('reviewer', 'agent-2', repo)].join('\n'),
       'utf8',
     );
+    writeSidechain('agent-1', [{ type: 'tool_use', name: 'Read', input: { file_path: 'a.ts' } }]);
 
     out = [];
   });
@@ -72,7 +86,13 @@ describe('handler CLI: show command (Req 11)', () => {
   });
 
   const invoke = (args: string[]): Promise<number> =>
-    run(args, { registryPath, storePath, projectsRoot, out: (line) => out.push(line) });
+    run(args, {
+      registryPath,
+      storePath,
+      projectsRoot,
+      scoreStorePath: join(dir, 'scores.json'),
+      out: (line) => out.push(line),
+    });
 
   it('reports when the agent has no runs', async () => {
     await invoke(['source', 'register', repo]);
@@ -93,6 +113,18 @@ describe('handler CLI: show command (Req 11)', () => {
     expect(report).toContain('agent-1');
     expect(report).toContain('agent-2');
     expect(report).toContain('incomplete');
+  });
+
+  it('shows a deterministic score for a run with a sub-transcript', async () => {
+    await invoke(['source', 'register', repo]);
+    out.length = 0;
+
+    expect(await invoke(['show', 'reviewer'])).toBe(0);
+    const report = out.join('\n');
+    expect(report).toMatch(/score:/);
+    expect(report).toMatch(/\b(PASS|WARN|FAIL)\b/);
+    // the interrupted run (agent-2) has no sidechain and is unscored
+    expect(report).toMatch(/unscored/);
   });
 
   it('lists the sources when the agent name is ambiguous', async () => {
