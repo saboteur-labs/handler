@@ -4,12 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Pre-implementation. The repository currently contains only design docs — there is no code, `package.json`, or test/build tooling yet. The design docs are the source of truth:
+In implementation. The MVP is broken into 5 features in `docs/features.md`; per-feature task lists live in `docs/tasks/`. Feature 1 (agent sources & identity) is in progress — its scaffolding (Task 1) is complete. The design docs remain the source of truth:
 
 - `docs/concept.md` — the "what and why" (problem, audience, capabilities, milestones, risks).
 - `docs/spec.md` — the **MVP** product spec: 21 numbered, testable functional requirements with RFC-2119 language, scoped to MVP only. v1/v2 work is explicitly in "Out of Scope (Deferred)".
+- `docs/features.md` — MVP feature breakdown; `docs/tasks/feature-*.md` — per-feature task lists.
 
-Read `docs/spec.md` before implementing anything; it is the authoritative requirement set. When you scaffold the JS/TS project, replace this status section with the real build/lint/test commands (including how to run a single test).
+Read `docs/spec.md` before implementing anything; it is the authoritative requirement set.
+
+### Stack & layout
+
+TypeScript + ESM (Node ≥20). Core library in `src/core/` behind a thin CLI in `src/cli/` (the CLI holds no logic — a future GUI consumes the same core). Build: **tsdown** (Rolldown). Test: **Vitest**. Lint: **ESLint** (flat config + typescript-eslint). Format: **Prettier**. Pre-commit: **husky + lint-staged**. CLI: **Commander + chalk**.
+
+### Commands
+
+- `npm test` — run the full test suite (Vitest, `src/**/*.test.ts`).
+- `npm run test:watch` — watch mode.
+- Run a single test file: `npx vitest run src/core/index.test.ts`.
+- Run tests matching a name: `npx vitest run -t "version constant"`.
+- `npm run typecheck` — `tsc --noEmit` (build is bundler-driven; tsc only typechecks).
+- `npm run lint` — ESLint over the repo.
+- `npm run format` — Prettier write; `npm run format:check` to verify.
+- `npm run build` — tsdown bundles `src/core` + `src/cli` to `dist/` (ESM `.js` + `.d.ts`; the CLI bin keeps its shebang).
 
 ## What handler is
 
@@ -28,10 +44,14 @@ This is the load-bearing, non-obvious part — validated empirically against rea
 ## Hard invariants (do not violate)
 
 - **User-created agents only.** Exclude built-in/plugin agents via a builtin denylist. Resolve run names against configurable sources (user-level + per-repo `.claude/agents`, derived from the run's `cwd`).
-- **Agent identity = `(source-type, normalized-source-path, name)`.** When a run could match multiple sources, attribute by the registered repo source whose path is the nearest ancestor of the run's `cwd`, else fall back to user-level. Snapshot the definition *content* (not a path ref) on each run so history survives renames/edits/deletions. Keep-and-tag runs whose definition can't be found; never drop them.
+- **Agent identity = `(source-type, normalized-source-path, name)`.** When a run could match multiple sources, attribute by the registered repo source whose path is the nearest ancestor of the run's `cwd`, else fall back to user-level. Snapshot the definition _content_ (not a path ref) on each run so history survives renames/edits/deletions. Keep-and-tag runs whose definition can't be found; never drop them.
 - **MVP scoring is deterministic, no LLM-judge.** The MVP behavioral score is Tier A checks + tool-utilization only (see `docs/spec.md` Req 12 and the Evaluation Baseline in the concept). The interpretive "judged quality" (Tier C) and reference-relative (Tier B) tiers are deferred to v1 — do not pull them into the MVP.
 - **Local-only.** The MVP makes no network calls except the opt-in conventions-doc fetch; deterministic checks send no agent definitions, code, or transcripts anywhere.
 - **Observe/evaluate only.** No agent-editing in the MVP (that is the v2 skill-registry vision).
+
+## Development approach
+
+**Use TDD.** Write a failing test first, then write the minimum code to make it pass, then refactor. No production code without a test driving it. Requirements in `docs/spec.md` are numbered and testable — map each test to the requirement it covers.
 
 ## Intended technical direction (from the concept; not yet built)
 
