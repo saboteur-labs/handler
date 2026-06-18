@@ -12,6 +12,7 @@ import { Command, CommanderError } from 'commander';
 import { VERSION } from '../core/index';
 import { registerConventionsCommand } from './commands/conventions';
 import { registerListCommand } from './commands/list';
+import { registerNoteCommand } from './commands/note';
 import { registerShowCommand } from './commands/show';
 import type { CliContext } from './commands/source';
 import { registerSourceCommand } from './commands/source';
@@ -26,8 +27,21 @@ export interface RunOptions {
   readonly scoreStorePath?: string;
   /** Conventions-artifact location; defaults to the core default. */
   readonly conventionsPath?: string;
+  /** Note-store location; defaults to the core default. */
+  readonly noteStorePath?: string;
   readonly out?: (line: string) => void;
   readonly err?: (line: string) => void;
+  /** Reads all of stdin to a string; defaults to draining `process.stdin`. */
+  readonly readStdin?: () => Promise<string>;
+}
+
+/** Drain `process.stdin` to a string, for piping a note body in (`note set`). */
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.from(chunk as Buffer));
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 /** Commander error codes that are normal terminations (help / version output). */
@@ -47,6 +61,8 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     storePath: options.storePath,
     scoreStorePath: options.scoreStorePath,
     conventionsPath: options.conventionsPath,
+    noteStorePath: options.noteStorePath,
+    readStdin: options.readStdin ?? readStdin,
   };
 
   const program = new Command();
@@ -64,6 +80,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerListCommand(program, ctx);
   registerShowCommand(program, ctx);
   registerConventionsCommand(program, ctx);
+  registerNoteCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });

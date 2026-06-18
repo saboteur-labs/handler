@@ -25,6 +25,8 @@ export type { CheckResult, CheckStatus, Score, ScoreBand } from './scoring/rubri
 export { RUBRIC_VERSION } from './scoring/rubric';
 export { scoreRun } from './scoring/score';
 export { defaultScoreStorePath, ScoreStore } from './store/score-store';
+export type { Note } from './store/note-store';
+export { defaultNotePath, NoteStore } from './store/note-store';
 export type { AgentAssessment, AssessOptions, ConventionsAssessment } from './conventions/assess';
 export { assessConventions } from './conventions/assess';
 export type { ConventionSmell, ConventionViolation, RuleId } from './conventions/checks';

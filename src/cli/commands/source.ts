@@ -26,6 +26,10 @@ export interface CliContext {
   readonly scoreStorePath?: string;
   /** Conventions-artifact location; defaults to the core default. */
   readonly conventionsPath?: string;
+  /** Note-store location; defaults to the core default. */
+  readonly noteStorePath?: string;
+  /** Reads all of stdin to a string; used when a note body is piped in. */
+  readonly readStdin: () => Promise<string>;
 }
 
 interface RegisterOptions {

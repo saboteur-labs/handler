@@ -37,6 +37,7 @@ Builds on Feature 1 (identity tuple + `identityKey`) and Feature 2 (`summarizeAg
 **Depends on:** 1, 2
 **Estimate:** 3
 **Notes:** Reqs 20 (add/read), 7. Thin-CLI pattern per Features 2–4. Note-store path injected through `CliContext` (see Task 6). Setting on an agent that already has a note overwrites it (single-note model).
+**Done:** [x]
 
 ### Task 4: `note edit` via `$EDITOR`
 
