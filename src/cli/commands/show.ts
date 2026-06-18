@@ -18,6 +18,7 @@ import {
   NoteStore,
   type Run,
   type Score,
+  type RunTelemetrySummary,
   type ScoreBand,
   scoreRun,
   ScoreStore,
@@ -111,7 +112,40 @@ function printAgent(
     }
     ctx.out(`    ${formatRun(run)}`);
     ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
+    const telemetry = run.telemetry === undefined ? undefined : formatTelemetry(run.telemetry);
+    if (telemetry !== undefined) {
+      ctx.out(`      ${chalk.dim(telemetry)}`);
+    }
   }
+}
+
+/** One-line per-run telemetry, or `undefined` when there is nothing to show. */
+function formatTelemetry(telemetry: RunTelemetrySummary): string | undefined {
+  const parts: string[] = [];
+  if (telemetry.turns.length > 0) {
+    const tokens = telemetry.turns.reduce(
+      (acc, turn) => ({
+        input: acc.input + turn.usage.inputTokens,
+        output: acc.output + turn.usage.outputTokens,
+        cacheRead: acc.cacheRead + turn.usage.cacheReadTokens,
+      }),
+      { input: 0, output: 0, cacheRead: 0 },
+    );
+    parts.push(`tokens in ${tokens.input} / out ${tokens.output} / cache-read ${tokens.cacheRead}`);
+  }
+  if (telemetry.latency !== undefined) {
+    parts.push(`latency p50 ${telemetry.latency.p50Ms}ms p95 ${telemetry.latency.p95Ms}ms`);
+  }
+  if (telemetry.stopReason !== undefined) {
+    parts.push(`stop ${telemetry.stopReason}`);
+  }
+  if (telemetry.filesEdited.length > 0) {
+    parts.push(`edits ${telemetry.filesEdited.length}`);
+  }
+  if (telemetry.retryLoops > 0) {
+    parts.push(`retries ${telemetry.retryLoops}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 /** Order runs chronologically; runs without a timestamp sort last. */

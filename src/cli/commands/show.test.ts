@@ -128,6 +128,47 @@ describe('handler CLI: show command (Req 11)', () => {
     expect(report).toMatch(/unscored/);
   });
 
+  it('surfaces per-run telemetry (tokens, latency, edits, stop reason)', async () => {
+    const subDir = join(projectsRoot, '-encoded', 'session', 'subagents');
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(
+      join(subDir, 'agent-agent-1.jsonl'),
+      [
+        {
+          type: 'assistant',
+          timestamp: '2026-06-17T10:00:00.000Z',
+          message: {
+            usage: { input_tokens: 100, output_tokens: 50, cache_read_input_tokens: 200 },
+            model: 'claude-opus-4-8',
+            stop_reason: 'end_turn',
+            content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }],
+          },
+        },
+        {
+          type: 'assistant',
+          timestamp: '2026-06-17T10:00:02.000Z',
+          message: {
+            usage: { input_tokens: 10, output_tokens: 5 },
+            stop_reason: 'end_turn',
+            content: [],
+          },
+        },
+      ]
+        .map((e) => JSON.stringify(e))
+        .join('\n'),
+      'utf8',
+    );
+
+    await invoke(['source', 'register', repo]);
+    out.length = 0;
+    expect(await invoke(['show', 'reviewer'])).toBe(0);
+    const report = out.join('\n');
+    expect(report).toMatch(/latency p50 2000ms/);
+    expect(report).toMatch(/edits 1/);
+    expect(report).toMatch(/end_turn/);
+    expect(report).toMatch(/in 110/); // summed input tokens
+  });
+
   it('surfaces an agent note inline, and omits the line when there is none', async () => {
     await invoke(['source', 'register', repo]);
 

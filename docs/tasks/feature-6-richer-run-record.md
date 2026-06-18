@@ -96,6 +96,7 @@ Builds on Feature 2 (run store, `RawRun`/`Run`, transcript parsing, definition s
 **Depends on:** 4
 **Estimate:** 2
 **Notes:** Turns the extracted data (Req 1) into something the author can see, per the feature's goals. Keep formatting in `src/cli`; assemble in core. Req 1.
+**Done:** [x] — `show` prints a dim per-run telemetry line (summed token in/out/cache-read, latency p50/p95, stop reason, edits count, retry-loop count) for runs with telemetry, omitting parts that are absent and the whole line for thin runs. +1 show test.
 
 ## Summary
 
