@@ -27,7 +27,7 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 **Depends on:** none
 **Estimate:** 3
 **Notes:** Mirrors `RunStore`/`ScoreStore` versioning (`CONVENTIONS_STORE_VERSION`, `defaultConventionsPath()`). Reader-only on handler's side (the skill writes it). Reqs 18, 19. The 16c default threshold is ≥40 chars (spec Req 16c) — shipped in the artifact, not hard-coded, so it stays tunable.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 3: Staleness evaluation
 
