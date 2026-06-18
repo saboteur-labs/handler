@@ -27,7 +27,7 @@ Builds on Feature 1's existing modules: `resolveAgent`, `agentIdentity`/`identit
 **Depends on:** none
 **Estimate:** 2
 **Notes:** Default root `~/.claude/projects`; keep it injectable. Don't decode the encoded-project name unless a downstream task needs the real path — `cwd` comes from entry fields (Task 3), not the folder name.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 3: Task-result extraction + `toolUseResult` schema guard
 
