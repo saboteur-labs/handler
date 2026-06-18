@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-In implementation. The MVP is broken into 5 features in `docs/features.md`; per-feature task lists live in `docs/tasks/`. Features 1–4 are complete: agent sources & identity (Feature 1), run ingestion & attributed history (Feature 2), deterministic behavioral scoring (Feature 3), and static definition assessment & conventions sync (Feature 4). The CLI can register sources (`source register`/`source list`), ingest runs from Claude Code's transcripts, `list`/`show` attributed agents with metrics and a per-run deterministic score (band, 0–100 composite, and the failing Tier A + tool-utilization checks), and `conventions` to check each definition against the distilled Anthropic subagent conventions (checks 16a–e + undeclared-scope smell) with a staleness header. The conventions artifact is distilled offline by the `handler-sync-conventions` skill (the only network path, under `.claude/skills/`) and a skill-generated default ships inlined in the bundle, so checks work on a fresh install. Feature 5 (notes) is not yet started. The design docs remain the source of truth:
+In implementation. The MVP is broken into 5 features in `docs/features.md`; per-feature task lists live in `docs/tasks/`. All five MVP features are complete (spec Reqs 1–21): agent sources & identity (Feature 1), run ingestion & attributed history (Feature 2), deterministic behavioral scoring (Feature 3), static definition assessment & conventions sync (Feature 4), and per-agent notes (Feature 5). The CLI can register sources (`source register`/`source list`), ingest runs from Claude Code's transcripts, `list`/`show` attributed agents with metrics and a per-run deterministic score (band, 0–100 composite, and the failing Tier A + tool-utilization checks), `conventions` to check each definition against the distilled Anthropic subagent conventions (checks 16a–e + undeclared-scope smell) with a staleness header, and `note set`/`note show`/`note edit` to attach a freeform note to an agent (keyed on the identity tuple so it survives rename/edit/delete; the note also renders inline in `show`). The conventions artifact is distilled offline by the `handler-sync-conventions` skill (the only network path, under `.claude/skills/`) and a skill-generated default ships inlined in the bundle, so checks work on a fresh install. The design docs remain the source of truth:
 
 - `docs/concept.md` — the "what and why" (problem, audience, capabilities, milestones, risks).
 - `docs/spec.md` — the **MVP** product spec: 21 numbered, testable functional requirements with RFC-2119 language, scoped to MVP only. v1/v2 work is explicitly in "Out of Scope (Deferred)".
@@ -53,10 +53,10 @@ This is the load-bearing, non-obvious part — validated empirically against rea
 
 **Use TDD.** Write a failing test first, then write the minimum code to make it pass, then refactor. No production code without a test driving it. Requirements in `docs/spec.md` are numbered and testable — map each test to the requirement it covers.
 
-## Intended technical direction (from the concept; not yet built)
+## Technical direction (from the concept; realized in the MVP)
 
-- Stack is JS/TS. Structure as a **core library behind a thin CLI**, so a later GUI can consume the same API and the GUI never holds logic.
-- Persist to an **append-only local store** (e.g. SQLite) keyed by agent identity + run id, with evaluations stored as **versioned annotations** so rubric changes don't rewrite history.
+- Stack is JS/TS. Structured as a **core library behind a thin CLI**, so a later GUI can consume the same API and the GUI never holds logic. This is in place: all behavior lives in `src/core/`; `src/cli/` only parses args and formats output.
+- Persistence is a set of **versioned local JSON stores** under `~/.handler/` (run store, score store, note store, conventions artifact), behind a single narrow boundary (`src/core/store/json-store.ts`) so the backing implementation could later swap to SQLite without touching callers. Each store carries a schema `version` and degrades a wrong-version/corrupt file to empty rather than migrating. Scores and notes are keyed by agent identity (+ run id / rubric version), so a rubric change adds a new annotation rather than rewriting history.
 
 ## Git
 
