@@ -1,6 +1,6 @@
 # Task List: Feature 2 — Run ingestion & attributed history
 
-**Feature source:** `docs/specs/feature-2-run-ingestion-history.md`
+**Feature source:** `docs/specs/mvp/feature-2-run-ingestion-history.md`
 **Requirements covered:** spec Reqs 1, 2, 6, 7, 9, 10, 11 (`docs/spec.md`)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md — failing test first, minimum code to pass, then refactor.

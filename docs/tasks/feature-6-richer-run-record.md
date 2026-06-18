@@ -1,6 +1,6 @@
 # Task List: Feature 6 — Richer run record & definition-change correlation
 
-**Feature source:** `docs/specs/feature-6-richer-run-record.md`
+**Feature source:** `docs/specs/mvp/feature-6-richer-run-record.md`
 **Requirements covered:** feature spec Reqs 1–7 (net-new v1; extends `docs/spec.md`)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md — failing test first, minimum code to pass, then refactor.
