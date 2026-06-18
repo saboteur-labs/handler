@@ -30,6 +30,8 @@ export interface CliContext {
   readonly noteStorePath?: string;
   /** Reads all of stdin to a string; used when a note body is piped in. */
   readonly readStdin: () => Promise<string>;
+  /** Opens `$EDITOR` on `filePath`, returning its exit code (`note edit`). */
+  readonly runEditor: (filePath: string) => number;
 }
 
 interface RegisterOptions {

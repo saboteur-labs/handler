@@ -6,6 +6,8 @@
  * turns a thrown error into a concise stderr message and a non-zero exit —
  * core never calls `process.exit`.
  */
+import { spawnSync } from 'node:child_process';
+
 import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
 
@@ -33,6 +35,8 @@ export interface RunOptions {
   readonly err?: (line: string) => void;
   /** Reads all of stdin to a string; defaults to draining `process.stdin`. */
   readonly readStdin?: () => Promise<string>;
+  /** Opens `$EDITOR` on a file; defaults to spawning the user's editor. */
+  readonly runEditor?: (filePath: string) => number;
 }
 
 /** Drain `process.stdin` to a string, for piping a note body in (`note set`). */
@@ -42,6 +46,17 @@ async function readStdin(): Promise<string> {
     chunks.push(Buffer.from(chunk as Buffer));
   }
   return Buffer.concat(chunks).toString('utf8');
+}
+
+/**
+ * Open the user's editor on `filePath` and return its exit code. Goes through a
+ * shell so `EDITOR`/`VISUAL` values carrying args (e.g. `code --wait`) work;
+ * the path is quoted for spaces. Falls back to `vi`.
+ */
+function runEditor(filePath: string): number {
+  const editor = process.env.VISUAL ?? process.env.EDITOR ?? 'vi';
+  const result = spawnSync(`${editor} "${filePath}"`, { stdio: 'inherit', shell: true });
+  return result.status ?? 1;
 }
 
 /** Commander error codes that are normal terminations (help / version output). */
@@ -63,6 +78,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     conventionsPath: options.conventionsPath,
     noteStorePath: options.noteStorePath,
     readStdin: options.readStdin ?? readStdin,
+    runEditor: options.runEditor ?? runEditor,
   };
 
   const program = new Command();

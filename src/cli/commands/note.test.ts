@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -55,13 +55,17 @@ describe('handler CLI: note commands (Req 20)', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  const invoke = (args: string[], stdin?: string): Promise<number> =>
+  const invoke = (
+    args: string[],
+    opts: { stdin?: string; runEditor?: (filePath: string) => number } = {},
+  ): Promise<number> =>
     run(args, {
       registryPath,
       storePath,
       projectsRoot,
       noteStorePath: notePath,
-      readStdin: () => Promise.resolve(stdin ?? ''),
+      readStdin: () => Promise.resolve(opts.stdin ?? ''),
+      runEditor: opts.runEditor,
       out: (line) => out.push(line),
     });
 
@@ -82,7 +86,7 @@ describe('handler CLI: note commands (Req 20)', () => {
 
   it('reads the note body from stdin when --body is omitted', async () => {
     await invoke(['source', 'register', repo]);
-    expect(await invoke(['note', 'set', 'reviewer'], 'from stdin')).toBe(0);
+    expect(await invoke(['note', 'set', 'reviewer'], { stdin: 'from stdin' })).toBe(0);
     out.length = 0;
     await invoke(['note', 'show', 'reviewer']);
     expect(out.join('\n')).toContain('from stdin');
@@ -97,6 +101,72 @@ describe('handler CLI: note commands (Req 20)', () => {
     const report = out.join('\n');
     expect(report).toContain('second');
     expect(report).not.toContain('first');
+  });
+
+  it('saves the edited contents when the editor exits cleanly', async () => {
+    await invoke(['source', 'register', repo]);
+    const editor = (filePath: string): number => {
+      writeFileSync(filePath, 'edited in $EDITOR\n', 'utf8');
+      return 0;
+    };
+    expect(await invoke(['note', 'edit', 'reviewer'], { runEditor: editor })).toBe(0);
+    out.length = 0;
+    await invoke(['note', 'show', 'reviewer']);
+    expect(out.join('\n')).toContain('edited in $EDITOR');
+  });
+
+  it('pre-loads the current note into the editor', async () => {
+    await invoke(['source', 'register', repo]);
+    await invoke(['note', 'set', 'reviewer', '--body', 'preexisting']);
+    let seen = '';
+    const editor = (filePath: string): number => {
+      seen = readFileSync(filePath, 'utf8');
+      return 0;
+    };
+    await invoke(['note', 'edit', 'reviewer'], { runEditor: editor });
+    expect(seen).toContain('preexisting');
+  });
+
+  it('leaves the prior note intact when the editor exits non-zero', async () => {
+    await invoke(['source', 'register', repo]);
+    await invoke(['note', 'set', 'reviewer', '--body', 'keep me']);
+    const before = readFileSync(notePath, 'utf8');
+    const abort = (filePath: string): number => {
+      writeFileSync(filePath, 'discard this', 'utf8');
+      return 1;
+    };
+    await invoke(['note', 'edit', 'reviewer'], { runEditor: abort });
+    expect(readFileSync(notePath, 'utf8')).toBe(before);
+    out.length = 0;
+    await invoke(['note', 'show', 'reviewer']);
+    expect(out.join('\n')).toContain('keep me');
+  });
+
+  it('does not rewrite the note when the content is unchanged', async () => {
+    await invoke(['source', 'register', repo]);
+    await invoke(['note', 'set', 'reviewer', '--body', 'stable']);
+    const before = readFileSync(notePath, 'utf8');
+    // Editor exits cleanly but the user changed nothing (a trailing newline added
+    // by the editor must not count as a change).
+    const noop = (filePath: string): number => {
+      writeFileSync(filePath, `${readFileSync(filePath, 'utf8')}\n`, 'utf8');
+      return 0;
+    };
+    await invoke(['note', 'edit', 'reviewer'], { runEditor: noop });
+    expect(readFileSync(notePath, 'utf8')).toBe(before);
+  });
+
+  it('edits from an empty starting note', async () => {
+    await invoke(['source', 'register', repo]);
+    const editor = (filePath: string): number => {
+      expect(readFileSync(filePath, 'utf8')).toBe('');
+      writeFileSync(filePath, 'first note', 'utf8');
+      return 0;
+    };
+    expect(await invoke(['note', 'edit', 'reviewer'], { runEditor: editor })).toBe(0);
+    out.length = 0;
+    await invoke(['note', 'show', 'reviewer']);
+    expect(out.join('\n')).toContain('first note');
   });
 
   it('reports unknown agents non-zero', async () => {

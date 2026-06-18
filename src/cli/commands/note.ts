@@ -7,6 +7,10 @@
  * runs, so it survives a renamed, edited, or deleted definition (Req 21). All
  * resolution/persistence lives in core; this layer parses args and formats.
  */
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import chalk from 'chalk';
 import type { Command } from 'commander';
 
@@ -45,6 +49,36 @@ export function registerNoteCommand(program: Command, ctx: CliContext): void {
       const identity = resolveOrThrow(ctx, name);
       const stored = new NoteStore(ctx.noteStorePath).get(identityKey(identity));
       ctx.out(stored === undefined ? `${name}: no note` : stored.body);
+    });
+
+  note
+    .command('edit <agent>')
+    .description("Edit an agent's note in $EDITOR")
+    .action((name: string) => {
+      const identity = resolveOrThrow(ctx, name);
+      const store = new NoteStore(ctx.noteStorePath);
+      const key = identityKey(identity);
+      const original = store.get(key)?.body ?? '';
+
+      const dir = mkdtempSync(join(tmpdir(), 'handler-note-'));
+      const file = join(dir, `${name}.md`);
+      try {
+        writeFileSync(file, original, 'utf8');
+        const status = ctx.runEditor(file);
+        if (status !== 0) {
+          ctx.out(chalk.yellow(`Editor exited non-zero — note for ${name} left unchanged.`));
+          return;
+        }
+        const edited = readFileSync(file, 'utf8').replace(/\r?\n$/, '');
+        if (edited === original) {
+          ctx.out(`No changes — note for ${name} left unchanged.`);
+          return;
+        }
+        store.set(key, edited);
+        ctx.out(chalk.green(`Saved note for ${name}.`));
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     });
 }
 

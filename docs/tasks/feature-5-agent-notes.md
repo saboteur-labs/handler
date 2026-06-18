@@ -47,6 +47,7 @@ Builds on Feature 1 (identity tuple + `identityKey`) and Feature 2 (`summarizeAg
 **Depends on:** 1, 2, 3
 **Estimate:** 2
 **Notes:** Req 20 (edit). Highest-uncertainty task — spawning an interactive process and reading it back is the one place this feature touches the OS/TTY. Inject the spawn function (default `child_process.spawnSync` with `stdio: 'inherit'`) so the command stays testable and the CLI stays thin.
+**Done:** [x]
 
 ### Task 5: Surface the note inline in `show <agent>`
 
