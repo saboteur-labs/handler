@@ -25,6 +25,24 @@ export type { CheckResult, CheckStatus, Score, ScoreBand } from './scoring/rubri
 export { RUBRIC_VERSION } from './scoring/rubric';
 export { scoreRun } from './scoring/score';
 export { defaultScoreStorePath, ScoreStore } from './store/score-store';
+export type { AgentAssessment, AssessOptions, ConventionsAssessment } from './conventions/assess';
+export { assessConventions } from './conventions/assess';
+export type { ConventionSmell, ConventionViolation, RuleId } from './conventions/checks';
+export { checkConventions } from './conventions/checks';
+export type {
+  ConventionRules,
+  ConventionsArtifact,
+  LoadedConventions,
+  MissingReason,
+} from './conventions/conventions-store';
+export {
+  CONVENTIONS_STORE_VERSION,
+  defaultConventionsPath,
+  loadConventions,
+  loadConventionsWithDefault,
+} from './conventions/conventions-store';
+export type { StalenessState } from './conventions/staleness';
+export { evaluateStaleness, hashRules, STALE_TTL_DAYS } from './conventions/staleness';
 export { defaultRegistryPath, SourceRegistry } from './sources/registry';
 export type { AgentSource, SourceType } from './sources/source';
 export { repoSource, userSource } from './sources/source';

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "sourceHash": "80d66f9584cc5af2d54849a5d32351d6b47079981c993882cfaabfb3b03326ba",
+  "lastSynced": "2026-06-18T06:00:06.027Z",
+  "rules": {
+    "requiredKeys": ["name", "description"],
+    "allowedKeys": [
+      "name",
+      "description",
+      "tools",
+      "disallowedTools",
+      "model",
+      "permissionMode",
+      "maxTurns",
+      "skills",
+      "mcpServers",
+      "hooks",
+      "memory",
+      "background",
+      "effort",
+      "isolation",
+      "color",
+      "initialPrompt"
+    ],
+    "descriptionMinLength": 40,
+    "cuePatterns": [
+      "use proactively",
+      "use immediately",
+      "use this",
+      "use when",
+      "use after",
+      "when the user",
+      "when encountering",
+      "must be used"
+    ]
+  }
+}
