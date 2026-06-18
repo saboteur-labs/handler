@@ -37,7 +37,7 @@ Builds on Feature 1 (source registry, `loadDefinitionSnapshot`, identity) and re
 **Depends on:** 2
 **Estimate:** 2
 **Notes:** Req 18. `STALE_TTL_DAYS = 30` documented constant. Hash-mismatch is detected by recomputing the artifact's own integrity hash over its rule set and comparing to the stored `sourceHash` (catches a hand-edited/corrupt artifact); cross-machine clock skew is out of scope.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 4: Convention checks engine (16a–e + undeclared-scope smell)
 
