@@ -376,6 +376,78 @@ describe('handler CLI: show command (Req 11)', () => {
     });
   });
 
+  describe('nested run "spawned by" annotation (V1 Feature 7)', () => {
+    /**
+     * Write a sidechain file named `agent-<parentAgentId>.jsonl` containing a
+     * nested run entry. Claude Code names sidechain files after the parent's
+     * agentId, so `parseSidechainParentAgentId` extracts `parentAgentId` from
+     * the filename to stamp the nested run.
+     */
+    function writeNestedRun(
+      parentAgentId: string,
+      agentType: string,
+      agentId: string,
+      cwd: string,
+    ): void {
+      const subDir = join(projectsRoot, '-encoded', 'session', 'subagents');
+      mkdirSync(subDir, { recursive: true });
+      const nestedEntry = JSON.stringify({
+        type: 'user',
+        cwd,
+        sessionId: 'session',
+        timestamp: '2026-06-17T11:00:00.000Z',
+        toolUseResult: {
+          status: 'completed',
+          agentId,
+          agentType,
+          totalDurationMs: 800,
+          totalTokens: 300,
+          totalToolUseCount: 2,
+          toolStats: {},
+        },
+      });
+      writeFileSync(join(subDir, `agent-${parentAgentId}.jsonl`), nestedEntry, 'utf8');
+    }
+
+    it('shows "spawned by <parentAgentName>" when parent run is in the store', async () => {
+      // agent-1 is a top-level run; agent-3 is a nested run whose sidechain is
+      // named agent-agent-1.jsonl (so parseSidechainParentAgentId returns "agent-1").
+      writeNestedRun('agent-1', 'reviewer', 'agent-3', repo);
+
+      await invoke(['source', 'register', repo]);
+      out.length = 0;
+
+      expect(await invoke(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+      // agent-1 is in the run list (from beforeEach) so annotation resolves to name
+      expect(report).toContain('spawned by reviewer');
+    });
+
+    it('shows "spawned by <raw-parentAgentId>" when parent run is not in the store', async () => {
+      // agent-3 is in a sidechain named agent-agent-99.jsonl → parent is agent-99
+      // which is not in any run list.
+      writeNestedRun('agent-99', 'reviewer', 'agent-3', repo);
+
+      await invoke(['source', 'register', repo]);
+      out.length = 0;
+
+      expect(await invoke(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+      expect(report).toContain('spawned by agent-99');
+    });
+
+    it('shows no annotation for runs without a parentAgentId', async () => {
+      // Default beforeEach setup: agent-1 and agent-2 come from the parent
+      // session transcript (not a sidechain), so they have no parentAgentId.
+      await invoke(['source', 'register', repo]);
+      out.length = 0;
+
+      expect(await invoke(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+      expect(report).not.toMatch(/spawned by/);
+    });
+  });
+
   describe('Tier C section in show output', () => {
     let tierCStorePath: string;
 

@@ -18,6 +18,8 @@ import {
   filterLast,
   filterSince,
   ingest,
+  resolveParentAnnotation,
+  type Run,
   ScoreStore,
   SourceRegistry,
   summarizeAgents,
@@ -84,7 +86,14 @@ export function registerTrendCommand(program: Command, ctx: CliContext): void {
       if (options.bucket !== undefined) {
         printBuckets(ctx, bucket(series, options.bucket as BucketGranularity));
       } else {
-        printSeries(ctx, series);
+        // Build a lookup from runId → parentAgentId for per-run annotation.
+        const parentById = new Map<string, string>();
+        for (const run of agentRuns) {
+          if (run.parentAgentId !== undefined) {
+            parentById.set(run.runId, run.parentAgentId);
+          }
+        }
+        printSeries(ctx, series, runs, parentById);
       }
     });
 }
@@ -96,12 +105,21 @@ function printAmbiguous(ctx: CliContext, name: string, matches: readonly AgentSu
   }
 }
 
-function printSeries(ctx: CliContext, series: readonly TrendRow[]): void {
+function printSeries(
+  ctx: CliContext,
+  series: readonly TrendRow[],
+  allRuns: readonly Run[],
+  parentById: ReadonlyMap<string, string>,
+): void {
   ctx.out(
     `${'timestamp'.padEnd(26)} ${'score'.padEnd(6)} ${'band'.padEnd(5)} ${'duration'.padEnd(11)} ${'tokens'.padEnd(7)} ${'tools'.padEnd(6)} status`,
   );
   for (const row of series) {
     ctx.out(formatRow(row));
+    const parentAgentId = parentById.get(row.runId);
+    if (parentAgentId !== undefined) {
+      ctx.out(`  ${chalk.dim(resolveParentAnnotation(parentAgentId, allRuns))}`);
+    }
   }
 }
 

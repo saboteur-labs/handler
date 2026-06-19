@@ -122,7 +122,7 @@ The existing pipeline is: `discoverTranscripts` (top-level `.jsonl` only) → `r
 
 ---
 
-### Task 7: "Spawned by" annotation in `show`
+### Task 7: "Spawned by" annotation in `show` ✓ COMPLETE
 
 **What:** Extend the `handler show` output to include a read-only "spawned by `<agent>`" annotation for each run entry that has a `parentAgentId`, using the `resolveParentAnnotation` function from Task 6.
 **Files:** `src/cli/commands/show.ts`, `src/cli/commands/show.test.ts`
@@ -141,7 +141,7 @@ The existing pipeline is: `discoverTranscripts` (top-level `.jsonl` only) → `r
 
 ---
 
-### Task 8: "Spawned by" annotation in `trend`
+### Task 8: "Spawned by" annotation in `trend` [COMPLETE]
 
 **What:** Extend the `handler trend` per-run output to include the same "spawned by" annotation for runs that carry a `parentAgentId`.
 **Files:** `src/cli/commands/trend.ts`, `src/cli/commands/trend.test.ts`

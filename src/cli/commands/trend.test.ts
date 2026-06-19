@@ -287,4 +287,86 @@ describe('handler CLI: trend command', () => {
     expect(report).toContain(repo);
     expect(report).toContain(home);
   });
+
+  describe('nested run "spawned by" annotation in trend (V1 Feature 7, Task 8)', () => {
+    /**
+     * Write a sidechain file named `agent-<parentAgentId>.jsonl` containing a
+     * nested run entry. Claude Code names sidechain files after the parent's
+     * agentId, so `parseSidechainParentAgentId` extracts `parentAgentId` from
+     * the filename to stamp the nested run.
+     */
+    function writeNestedRun(
+      parentAgentId: string,
+      agentType: string,
+      agentId: string,
+      cwd: string,
+      timestamp = '2024-01-16T10:00:00.000Z',
+    ): void {
+      const subDir = join(projectsRoot, '-encoded', 'session', 'subagents');
+      mkdirSync(subDir, { recursive: true });
+      const nestedEntry = JSON.stringify({
+        type: 'user',
+        cwd,
+        sessionId: 'session',
+        timestamp,
+        toolUseResult: {
+          status: 'completed',
+          agentId,
+          agentType,
+          totalDurationMs: 800,
+          totalTokens: 300,
+          totalToolUseCount: 2,
+          toolStats: {},
+        },
+      });
+      writeFileSync(join(subDir, `agent-${parentAgentId}.jsonl`), nestedEntry, 'utf8');
+    }
+
+    // 13. Mix of nested and top-level runs → annotation only on nested runs
+    it('shows "spawned by" annotation only on nested runs, not on top-level runs', async () => {
+      // Top-level run: agent-1 (no parentAgentId)
+      setupSingleRun('2024-01-15T10:00:00.000Z');
+      // Nested run: agent-3 spawned by agent-1 (sidechain file agent-agent-1.jsonl)
+      writeNestedRun('agent-1', 'reviewer', 'agent-3', repo, '2024-01-16T10:00:00.000Z');
+
+      await invoke(['source', 'register', repo]);
+      out.length = 0;
+      expect(await invoke(['trend', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+
+      // The nested run row should show the annotation
+      expect(report).toContain('spawned by reviewer');
+      // Only one "spawned by" line should appear (not on the top-level run)
+      const spawnedByCount = (report.match(/spawned by/g) ?? []).length;
+      expect(spawnedByCount).toBe(1);
+    });
+
+    // 14. Bucketed output → no annotations rendered
+    it('does not render "spawned by" annotations on bucketed rows', async () => {
+      setupSingleRun('2024-01-15T10:00:00.000Z');
+      writeNestedRun('agent-1', 'reviewer', 'agent-3', repo, '2024-01-16T10:00:00.000Z');
+
+      await invoke(['source', 'register', repo]);
+      out.length = 0;
+      expect(await invoke(['trend', 'reviewer', '--bucket', 'day'])).toBe(0);
+      const report = out.join('\n');
+
+      expect(report).not.toMatch(/spawned by/);
+    });
+
+    // 15. Parent run not found → degrades gracefully (raw id shown, no error)
+    it('shows raw parentAgentId when parent run is not in the store', async () => {
+      // Nested run in sidechain agent-agent-99.jsonl → parentAgentId = 'agent-99'
+      // but no run with runId 'agent-99' exists in the store
+      writeNestedRun('agent-99', 'reviewer', 'agent-3', repo, '2024-01-15T10:00:00.000Z');
+
+      await invoke(['source', 'register', repo]);
+      out.length = 0;
+      expect(await invoke(['trend', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+
+      // Degrades gracefully: shows raw id, no error
+      expect(report).toContain('spawned by agent-99');
+    });
+  });
 });

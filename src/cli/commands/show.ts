@@ -16,6 +16,7 @@ import {
   definitionChangeDeltas,
   ingest,
   NoteStore,
+  resolveParentAnnotation,
   type Run,
   type Score,
   type RunTelemetrySummary,
@@ -126,6 +127,9 @@ function printAgent(
       ctx.out(`    ${formatDefinitionChange(marker)}`);
     }
     ctx.out(`    ${formatRun(run)}`);
+    if (run.parentAgentId !== undefined) {
+      ctx.out(`      ${chalk.dim(resolveParentAnnotation(run.parentAgentId, allRuns))}`);
+    }
     ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
     ctx.out(`      ${formatTierB(tierBForRun(run, runs, tierBStore))}`);
     const tierCResult = tierCStore.get(run.identityKey, run.runId, TIER_C_VERSION);
