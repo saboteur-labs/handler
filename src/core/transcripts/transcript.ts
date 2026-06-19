@@ -91,11 +91,7 @@ export function readTranscript(
     if (type === 'user') {
       if (!firstUserSeen) {
         firstUserSeen = true;
-        // Extract taskPrompt from text-type (non-tool_result) blocks only.
-        const textParts = blocks
-          .filter((b) => b['type'] === 'text' && typeof b['text'] === 'string')
-          .map((b) => b['text'] as string);
-        taskPrompt = textParts.length > 0 ? textParts.join('') : undefined;
+        taskPrompt = extractTaskPrompt(message);
       }
 
       // Attach tool results to the buffered assistant turn's pending tool calls.
@@ -200,6 +196,24 @@ function applyTruncation(text: string, maxBytes: number): { text: string; trunca
   }
   const buf = Buffer.from(text, 'utf8').subarray(0, maxBytes);
   return { text: buf.toString('utf8'), truncated: true };
+}
+
+/**
+ * The first user entry's task prompt. Claude Code records it either as a plain
+ * string `message.content` (the common sub-agent shape, confirmed against real
+ * `~/.claude` data) or as an array of content blocks, where the prompt is the
+ * text-type (non-`tool_result`) blocks. Returns `undefined` when neither yields
+ * text (e.g. a first user entry carrying only tool results).
+ */
+function extractTaskPrompt(message: Record<string, unknown>): string | undefined {
+  const content = message['content'];
+  if (typeof content === 'string') {
+    return content.length > 0 ? content : undefined;
+  }
+  const textParts = contentBlocks(message)
+    .filter((b) => b['type'] === 'text' && typeof b['text'] === 'string')
+    .map((b) => b['text'] as string);
+  return textParts.length > 0 ? textParts.join('') : undefined;
 }
 
 /** The `message.content` blocks of a message, or `[]` when absent/misshaped. */

@@ -87,6 +87,17 @@ describe('readTranscript', () => {
     expect(result.turns).toHaveLength(0);
   });
 
+  // Req 45: first user entry whose content is a plain string (the real
+  // sub-agent task-prompt shape) → taskPrompt populated
+  it('extracts taskPrompt when the first user entry content is a plain string', () => {
+    const file = writeSidechain({
+      type: 'user',
+      message: { role: 'user', content: 'You are implementing Task 7' },
+    });
+    const result = readTranscript(file);
+    expect(result.taskPrompt).toBe('You are implementing Task 7');
+  });
+
   // Req 45: first user entry with only tool_result blocks → taskPrompt undefined
   it('returns taskPrompt undefined when first user entry has only tool_result blocks', () => {
     const file = writeSidechain(userEntry([toolResultBlock('tool_1', 'some result')]));
