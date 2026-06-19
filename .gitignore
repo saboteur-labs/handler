@@ -4,5 +4,9 @@ coverage/
 *.log
 .DS_Store
 
+# GUI workspace
+gui/node_modules/
+dist/gui/
+
 # Local Claude Code settings (machine-specific)
 .claude/settings.local.json

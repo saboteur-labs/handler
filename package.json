@@ -24,14 +24,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown --config-loader native",
+    "build": "tsdown --config-loader native && npm run build:gui",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:gui": "npm --prefix gui ci && npm --prefix gui run build"
   },
   "dependencies": {
     "chalk": "^5.4.1",
