@@ -1,0 +1,1 @@
+{"type":"user","cwd":"/Users/me/repo","sessionId":"session-root","timestamp":"2025-06-01T10:00:00.000Z","toolUseResult":{"status":"completed","agentId":"agent-1","agentType":"orchestrator","totalDurationMs":2000,"totalTokens":800,"totalToolUseCount":5,"toolStats":{"readCount":3,"editCount":1}}}

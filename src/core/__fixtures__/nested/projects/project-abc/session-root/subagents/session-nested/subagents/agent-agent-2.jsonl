@@ -1,0 +1,1 @@
+{"type":"user","cwd":"/Users/me/repo","sessionId":"session-deep","timestamp":"2025-06-01T10:02:00.000Z","toolUseResult":{"status":"completed","agentId":"agent-3","agentType":"validator","totalDurationMs":500,"totalTokens":200,"totalToolUseCount":2,"toolStats":{"readCount":1}}}

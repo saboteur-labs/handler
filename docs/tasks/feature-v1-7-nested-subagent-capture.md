@@ -160,7 +160,7 @@ The existing pipeline is: `discoverTranscripts` (top-level `.jsonl` only) → `r
 
 ---
 
-### Task 9: Integration test — end-to-end nested capture pipeline
+### Task 9: Integration test — end-to-end nested capture pipeline [COMPLETE]
 
 **What:** An integration test that exercises the full pipeline with fixture data: a parent transcript containing a nested `Task` result, a sidechain file containing that nested agent's conversation (itself with a further nested `Task` result), discovery, ingestion, scoring, and `show`/`trend` annotation — confirming all six requirements across the vertical slice.
 **Files:** `src/core/ingest.integration.test.ts` (new or extend existing), plus fixture JSONL files under `src/core/__fixtures__/nested/`
