@@ -17,6 +17,7 @@ The MVP proved the core loop: it ingests user-authored Claude Code subagent runs
 - A developer can surface roster-level insights across all their agents — which are unused, failing, or expensive — in one view.
 - A developer can browse their roster, run history, and scores in a lightweight GUI built on the same core as the CLI.
 - A developer can optionally capture runs in real time via a `SubagentStop` hook without producing duplicate records.
+- A developer whose agents spawn other agents can see those nested runs attributed, scored, and annotated with their lineage — silently dropped today.
 
 ## Non-goals
 
@@ -45,6 +46,7 @@ _Secondary audiences (small teams; published-agent authors) are acknowledged in 
 - **US-14** [v1] As an agent author, I want to browse runs and scores in a GUI, so inspection is visual rather than tabular.
 - **US-15** [v1] As an agent author, I want optional real-time run capture via a hook, so I don't have to wait for transcript parsing.
 - **US-16** [v1] As an agent author, I want to optionally label a few of my own runs with a score and reasoning, when I choose to, so I can calibrate the judge to match my judgment.
+- **US-17** [v1] As an agent author, I want runs from agents that my agents spawn to appear in my roster, history, and scores — with a read-only "spawned by" annotation — so I can evaluate my full agent call tree, not just top-level runs.
 
 ## Functional Requirements
 
@@ -85,6 +87,15 @@ _Secondary audiences (small teams; published-agent authors) are acknowledged in 
 37. The system MUST support an optional `SubagentStop` hook for real-time run capture, and MUST reconcile a hook event and the corresponding transcript span into a single run record without creating duplicates. [US-15]
 38. The hook MUST be complementary, not required: transcript parsing MUST remain the source of truth for run content, and the system MUST function fully with the hook disabled. [US-15]
 
+**Nested subagent capture**
+
+39. Discovery MUST recurse into `<sessionId>/subagents/` directories at arbitrary nesting depth, so that runs from agents spawned by agents are discovered regardless of how deep in the call tree they occur. [US-17]
+40. Each nested run MUST be attributed to its own agent identity tuple `(source-type, normalized-source-path, name)` using the same resolution logic as top-level runs (nearest registered repo-source ancestor of the run's `cwd`, falling back to user-level). Cost and score data MUST NOT be rolled up from a child run into its parent. [US-17]
+41. The system MUST extract the `parentAgentId` from the containing sidechain filename (`agent-<parentAgentId>.jsonl`) and persist it as an optional field on the run record. A run-store schema version bump MUST accompany this change. [US-17]
+42. Discovery MUST guard against ingesting the same `agentId` twice — for example when a nested run would otherwise be encountered via multiple traversal paths — and MUST NOT produce duplicate run records. [US-17]
+43. Interrupted or incomplete nested runs MUST be kept-and-tagged rather than dropped, consistent with the existing parse-defensively invariant (MVP Req 7). [US-17]
+44. The `show` and `trend` commands MUST resolve `parentAgentId` to the parent run's identity and display a read-only "spawned by <agent>" annotation per run. When the parent run has not been ingested or its definition is absent, the annotation MUST degrade gracefully — showing the raw parent name or id — and MUST NOT cause the command to fail. [US-17]
+
 ## Constraints
 
 - **Local-first / privacy:** the only network/off-machine paths in v1 are the opt-in conventions-doc fetch (MVP) and the opt-in Tier C judged-quality call (Req 28); all Tier A/B checks and ingestion stay fully local.
@@ -100,7 +111,7 @@ _Secondary audiences (small teams; published-agent authors) are acknowledged in 
 **Impact:** Would add requirements in a separate, clearly-labeled interpretive tier; gated on real-data validation of (a) non-heuristic run→commit linkage and (b) whether survival correlates with agent quality. Not in v1 scope until resolved.
 **Owner:** Product + data validation.
 
-_Resolved during speccing:_ Tier C rubric calibration — **decided** to include an optional, user-triggered human-labeled anchor set as few-shot judge calibration (Req 30); created only when the user chooses, never required for a signal. Default tuning values (Tier B outlier 2×, min-runs 5, unused-window, failing-score threshold) — **accepted** as starter defaults per Reqs 23, 25, 33, adjustable once real run history exists (MVP precedent).
+_Resolved during speccing:_ Tier C rubric calibration — **decided** to include an optional, user-triggered human-labeled anchor set as few-shot judge calibration (Req 30); created only when the user chooses, never required for a signal. Default tuning values (Tier B outlier 2×, min-runs 5, unused-window, failing-score threshold) — **accepted** as starter defaults per Reqs 23, 25, 33, adjustable once real run history exists (MVP precedent). Nested subagent attribution model — **decided** flat attribution with a captured lineage pointer (Reqs 39–44): each nested run attributes to its own identity tuple exactly like a top-level run and is scored independently; `parentAgentId` is captured at near-zero cost from the sidechain filename so lineage is reconstructable without re-ingestion; lineage-aware roll-ups (cost/score aggregated across a call tree) are deferred (see Out of Scope).
 
 ## Out of Scope (Deferred)
 
@@ -109,3 +120,4 @@ _Resolved during speccing:_ Tier C rubric calibration — **decided** to include
 - [v2] — Shareable/exportable evaluation reports for teams or published agents.
 - [post-MVP] — Automatic data-retention/pruning; a manual `prune` command with an optional age/count cap that reclaims raw run detail while retaining per-run scores and aggregate metrics (concept: resolved post-MVP decision).
 - [v1+] — Git-survival / test-outcome metric source (see OQ-1).
+- [v1+] — Lineage-aware roll-ups: cost and score aggregated across a call tree (parent/child double-counting questions; belongs with roster insights / Tier B cost once the tree is fully capturable).

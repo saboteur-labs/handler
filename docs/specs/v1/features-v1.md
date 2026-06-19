@@ -62,6 +62,21 @@
 **Branch suggestion:** `feature/lightweight-gui`
 **Notes:** Hard invariant: the GUI holds no logic (Req 35) — any behavior it needs lives in `src/core/`. Broadest cross-dependency surface; ship last.
 
+### Feature 7: Nested subagent capture (agents spawned by agents)
+
+**Value:** A developer whose agents spawn other agents (e.g. an orchestrator that invokes implementor agents) sees those nested runs in their roster, history, and scores — today they are silently dropped.
+**Background — why this is a gap, not an impossibility:** Attribution is fully recoverable from the on-disk data model. Ingestion only reads **parent-session** transcripts: `discoverTranscripts` (`src/core/transcripts/discover.ts`) walks the top-level `<sessionId>.jsonl` files and structurally excludes the `<sessionId>/subagents/` directory. When an agent spawns another agent, the nested `Task` result (`toolUseResult` with `agentType`/`agentId`) lands _inside the spawning agent's sidechain_ — `agent-<parentAgentId>.jsonl` — which extraction never sees. The MVP spec (Reqs 1–21) is written entirely around parent-session Task results and never mentions nesting, so this was an unscoped gap, not an explicit deferral. **Empirically real:** nested `agentType` results are present in real `~/.claude` data (found in 13 sidechain files locally), with the same `toolUseResult` shape and `agentId` join key as top-level runs.
+**Vertical slice:** logic (recursively discover sidechain `.jsonl` files at any depth; extract nested Task results with the existing `extractRuns`/attribution path; resolve each nested run's identity from its `cwd` exactly as today; capture the parent's `agentId` from the containing sidechain filename) / data (persist `parentAgentId` as an optional captured field on the run; run-store version bump) / interface (resolve `parentAgentId` to the parent's identity and show a read-only "spawned by <agent>" tag per run in `show`/`trend`).
+**Requirements covered:** 39, 40, 41, 42, 43, 44
+**User stories:** US-17
+**Depends on:** none hard — reuses MVP discovery/extraction/attribution and the existing identity tuple; flat attribution needs no new store concepts beyond the optional `parentAgentId` field. Independently shippable.
+**Branch suggestion:** `feature/nested-subagent-capture`
+**Design decision — flat attribution + captured lineage pointer (resolved 2026-06-18):** A nested run attributes to its own identity tuple exactly like a top-level run and is scored on its own sidechain (no roll-ups, so no parent/child token double-counting). We additionally persist `parentAgentId` — a near-free capture, since the parent's `agentId` is encoded in the containing `agent-<parentAgentId>.jsonl` filename — so lineage is fully reconstructable later without re-ingesting history. `show`/`trend` use that pointer only for a read-only "spawned by" annotation; lineage-aware **roll-ups** (cost/score aggregated across a call tree) are explicitly out of scope here and belong with roster insights (Feature 4) / Tier B cost (Feature 2), which is where the double-counting and tree-display questions live.
+
+- _Why flat, not full lineage:_ handler's unit of evaluation is the agent identity, and a run's score never depends on who invoked it — so flat fits the existing store and grain. Capturing the pointer keeps the door open at negligible cost.
+- _Reconstructability is proven:_ the parent run named by `parentAgentId` is itself ingestable (top-level session, or its own grandparent's sidechain for deeper nests), so `parentAgentId` joins back to the parent run and through it to the parent's full identity tuple, at arbitrary depth.
+  **Notes:** Discovery must avoid double-counting **runs** — a nested run's identity is independent of its parent, so guard against ingesting the same `agentId` twice (e.g. from both the recursive walk and any future change to the top-level walk). The "spawned by" resolution must degrade gracefully when the parent run hasn't been ingested (or its definition is gone) — show the raw parent name/id rather than failing. Keep recursive discovery defensive per the MVP parse-defensively invariant (Req 7): interrupted/incomplete nested runs are kept-and-tagged, never dropped.
+
 ## Coverage check
 
 - **22, 23, 24, 25** → Feature 2 (Tier B)
@@ -70,11 +85,12 @@
 - **33, 34** → Feature 4 (roster insights)
 - **35, 36** → Feature 6 (GUI)
 - **37, 38** → Feature 5 (hook)
-- Unassigned requirements: none — all of Reqs 22–38 are assigned to exactly one feature.
+- **39, 40, 41, 42, 43, 44** → Feature 7 (nested subagent capture)
+- Unassigned requirements: none — all of Reqs 22–44 are assigned to exactly one feature.
 
 ## Summary
 
-- **Total features:** 6
-- **Suggested build order:** 1 → (2, 3 in parallel) → 4 → 5 → 6. Feature 1 is the enabling slice; 2 and 3 are independent and can run in parallel; 4 needs 1 (and 2 for the full "expensive" view); 5 needs 1; 6 consumes 1–3 and ships last.
-- **Independently shippable:** Features 1, 2, and 3 (each reads existing MVP stores/snapshots; no V1 dependencies).
+- **Total features:** 7 (Reqs 22–44).
+- **Suggested build order:** 1 → (2, 3, 7 in parallel) → 4 → 5 → 6. Feature 1 is the enabling slice; 2, 3, and 7 are independent and can run in parallel; 4 needs 1 (and 2 for the full "expensive" view); 5 needs 1; 6 consumes 1–3 and ships last.
+- **Independently shippable:** Features 1, 2, 3, and 7 (each reads existing MVP stores/snapshots or reuses MVP discovery/attribution; no V1 dependencies).
 - **Risks:** Feature 3 (Tier C) — the only network/LLM path, carries the trust/opt-in/never-merge constraints. Feature 5 (hook) — reconciliation/dedup correctness. Feature 6 (GUI) — broadest dependency surface plus the "no logic in GUI" invariant.
