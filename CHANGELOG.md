@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3](https://github.com/saboteur-labs/handler/compare/handler-v0.1.2...handler-v0.1.3) (2026-06-19)
+
+
+### Features
+
+* **insights:** add roster-level insights command (V1 Feature 4) ([788c19d](https://github.com/saboteur-labs/handler/commit/788c19dda83e8622a7d75122e11d07d8db154f0d))
+* **insights:** roster-level insights command (V1 Feature 4) ([1bb056c](https://github.com/saboteur-labs/handler/commit/1bb056c507b1d57c88ae5449770bfeccd68a4f88))
+* **insights:** surface defined-but-unrun agents in no-history bucket ([5a6f1c9](https://github.com/saboteur-labs/handler/commit/5a6f1c9c365d379f0f6e05ebb4633896b6f1a384))
+
 ## [0.1.2](https://github.com/saboteur-labs/handler/compare/handler-v0.1.1...handler-v0.1.2) (2026-06-19)
 
 
