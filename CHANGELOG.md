@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/saboteur-labs/handler/compare/handler-v0.1.3...handler-v0.1.4) (2026-06-19)
+
+
+### Features
+
+* **hook:** add SubagentStop real-time capture hook (V1 Feature 5) ([da68388](https://github.com/saboteur-labs/handler/commit/da68388eb4f514d3ee144b0b59a538ed063a61e7))
+* **hook:** SubagentStop real-time capture hook (V1 Feature 5) ([9a67284](https://github.com/saboteur-labs/handler/commit/9a6728454c56dd33c1095ecf40834e5c927894f6))
+
 ## [0.1.3](https://github.com/saboteur-labs/handler/compare/handler-v0.1.2...handler-v0.1.3) (2026-06-19)
 
 
