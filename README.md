@@ -12,9 +12,14 @@ It does this in two complementary ways:
   score (a band, a 0–100 composite, and the failing Tier A + tool-utilization checks).
 - **Conventions assessment** — checks each agent _definition_ against a distilled set
   of Anthropic's subagent conventions and reports violations citing the specific rule.
+- **Judged quality (Tier C)** — an _optional_, opt-in LLM-judge signal that asks whether
+  a run actually fulfilled the agent's own stated role, with the judge's reasoning
+  attached. It is segregated from the deterministic score and never blended into it
+  (see [Judged quality (Tier C)](#judged-quality-tier-c)).
 
-Everything runs locally. The only network call handler can make is the opt-in
-conventions sync (see [Keeping conventions current](#keeping-conventions-current)).
+Everything runs locally by default. The only network calls handler can make are both
+opt-in: the conventions sync (see [Keeping conventions current](#keeping-conventions-current))
+and the Tier C judge, which runs only when you explicitly invoke `handler judge`.
 
 ## Requirements
 
@@ -137,6 +142,56 @@ Flags:
 A single-run agent renders its one row without implying a trend; an agent with
 no runs prints a "no runs" message.
 
+### `handler judge <agent> <runId>`
+
+Invoke the Tier C LLM judge on a single run (opt-in). It prints a pre-flight
+warning that the run's output and definition content will be sent to an external
+model, and waits for confirmation before making any network call — declining
+aborts with nothing sent and no state changed. On confirmation it asks the judge
+whether the run fulfilled the agent's stated role and stores the verdict and the
+judge's reasoning as a segregated Tier C annotation.
+
+Flags:
+
+- `--yes` / `--confirm` — skip the interactive confirmation (for non-interactive
+  use). The judge still only runs because you asked it to.
+
+The judge needs an Anthropic API key in `ANTHROPIC_API_KEY` (see
+[Judged quality (Tier C)](#judged-quality-tier-c)). A failed call leaves existing
+scores and annotations untouched.
+
+### `handler anchor <agent> <runId> --score <pass|fail> --reasoning <text>`
+
+Mark a past run as a ground-truth calibration anchor for the Tier C judge —
+your own verdict and reasoning for that run. Anchors are user-created only and,
+when present for an agent, are supplied to the judge as few-shot examples so its
+verdicts track your judgment. The judge still produces a signal with no anchors.
+
+## Judged quality (Tier C)
+
+Tier C is an interpretive signal, distinct from handler's deterministic scoring.
+Where Tier A/B measure behavioral conformance and resource outliers, Tier C asks
+an LLM judge a single question: _did this run fulfill the agent's own stated role?_
+The verdict (`pass`/`fail`) and the judge's reasoning are stored as a versioned
+annotation keyed by agent identity + run id + rubric version, and rendered in
+`handler show` as a clearly labeled section of its own.
+
+Three properties are guaranteed:
+
+- **Opt-in.** Tier C never runs during ingestion, scoring, or any other command.
+  It runs only when you invoke `handler judge`, and only after you confirm the
+  pre-flight warning. Everything else in handler works with Tier C never invoked.
+- **Never blended.** The Tier C verdict is never merged into the 0–100 composite,
+  the band, or any Tier A/B annotation. It lives in its own store and its own
+  display section.
+- **Auditable.** Each annotation records the verdict, the judge's reasoning, the
+  rubric version, and a timestamp. A rubric change adds a new annotation rather
+  than rewriting history.
+
+You supply your own model access — handler structures the call and stores the
+result, but does not manage or host a model. Set `ANTHROPIC_API_KEY` in your
+environment; the judge defaults to `claude-sonnet-4-6`.
+
 ## Keeping conventions current
 
 The conventions standard is distilled from Anthropic's current subagent documentation
@@ -155,13 +210,15 @@ handler stores its data under `~/.handler/` and resolves Claude Code's transcrip
 from `~/.claude/projects/`. Each location can be overridden with an environment
 variable — handy for testing or non-standard setups:
 
-| Variable              | Overrides                                                     |
-| --------------------- | ------------------------------------------------------------- |
-| `HANDLER_REGISTRY`    | Source registry file (default `~/.handler/sources.json`).     |
-| `HANDLER_STORE`       | Run store (default `~/.handler/runs.json`).                   |
-| `HANDLER_SCORES`      | Score store (default `~/.handler/scores.json`).               |
-| `HANDLER_CONVENTIONS` | Conventions artifact (default `~/.handler/conventions.json`). |
-| `HANDLER_PROJECTS`    | Claude Code transcripts root (default `~/.claude/projects`).  |
+| Variable              | Overrides                                                                       |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `HANDLER_REGISTRY`    | Source registry file (default `~/.handler/sources.json`).                       |
+| `HANDLER_STORE`       | Run store (default `~/.handler/runs.json`).                                     |
+| `HANDLER_SCORES`      | Score store (default `~/.handler/scores.json`).                                 |
+| `HANDLER_TIERC`       | Tier C annotation store (default `~/.handler/tier-c.json`).                     |
+| `HANDLER_CONVENTIONS` | Conventions artifact (default `~/.handler/conventions.json`).                   |
+| `HANDLER_PROJECTS`    | Claude Code transcripts root (default `~/.claude/projects`).                    |
+| `ANTHROPIC_API_KEY`   | API key for the opt-in Tier C judge (no default; required for `handler judge`). |
 
 ## How it works
 

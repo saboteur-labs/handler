@@ -30,6 +30,15 @@ export interface CliContext {
   readonly noteStorePath?: string;
   /** Tier B store location; defaults to the core default. */
   readonly tierBStorePath?: string;
+  /** Anchor store location; defaults to the core default. */
+  readonly anchorStorePath?: string;
+  /** Tier C annotation store location; defaults to the core default. */
+  readonly tierCStorePath?: string;
+  /**
+   * Injectable LLM judge client for Tier C invocation. When undefined, the
+   * command will construct a `DefaultJudgeClient` from the environment.
+   */
+  readonly judgeClient?: import('../../core/index').JudgeClient;
   /** Reads all of stdin to a string; used when a note body is piped in. */
   readonly readStdin: () => Promise<string>;
   /** Opens `$EDITOR` on `filePath`, returning its exit code (`note edit`). */

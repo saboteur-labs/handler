@@ -11,9 +11,12 @@ import { spawnSync } from 'node:child_process';
 import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
 
+import type { JudgeClient } from '../core/index';
 import { VERSION } from '../core/index';
+import { registerAnchorCommand } from './commands/anchor';
 import { registerConventionsCommand } from './commands/conventions';
 import { registerDiffCommand } from './commands/diff';
+import { registerJudgeCommand } from './commands/judge';
 import { registerListCommand } from './commands/list';
 import { registerNoteCommand } from './commands/note';
 import { registerShowCommand } from './commands/show';
@@ -35,6 +38,15 @@ export interface RunOptions {
   readonly noteStorePath?: string;
   /** Tier B store location; defaults to the core default. */
   readonly tierBStorePath?: string;
+  /** Anchor store location; defaults to the core default. */
+  readonly anchorStorePath?: string;
+  /** Tier C annotation store location; defaults to the core default. */
+  readonly tierCStorePath?: string;
+  /**
+   * Injectable LLM judge client for Tier C invocation. When undefined, the
+   * command will construct a `DefaultJudgeClient` from the environment.
+   */
+  readonly judgeClient?: JudgeClient;
   readonly out?: (line: string) => void;
   readonly err?: (line: string) => void;
   /** Reads all of stdin to a string; defaults to draining `process.stdin`. */
@@ -82,6 +94,9 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     conventionsPath: options.conventionsPath,
     noteStorePath: options.noteStorePath,
     tierBStorePath: options.tierBStorePath,
+    anchorStorePath: options.anchorStorePath,
+    tierCStorePath: options.tierCStorePath,
+    judgeClient: options.judgeClient,
     readStdin: options.readStdin ?? readStdin,
     runEditor: options.runEditor ?? runEditor,
   };
@@ -104,6 +119,8 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerConventionsCommand(program, ctx);
   registerNoteCommand(program, ctx);
   registerTrendCommand(program, ctx);
+  registerAnchorCommand(program, ctx);
+  registerJudgeCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });

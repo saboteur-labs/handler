@@ -67,10 +67,18 @@ export {
   tierBForRun,
   TIER_B_VERSION,
 } from './scoring/tier-b';
+export type { TierCAnchor, TierCLabel, TierCResult } from './scoring/tier-c';
+export { judgeRun, TIER_C_VERSION } from './scoring/tier-c';
 export type { TierBAnnotation } from './store/tier-b-store';
 export { defaultTierBStorePath, TierBStore, TIER_B_STORE_VERSION } from './store/tier-b-store';
+export type { TierCAnnotation } from './store/tier-c-store';
+export { defaultTierCStorePath, TierCStore, TIER_C_STORE_VERSION } from './store/tier-c-store';
 export type { TierBReference, TierBReferenceResult } from './scoring/tier-b-reference';
 export { computeReference } from './scoring/tier-b-reference';
 export { computeOutlierFlags } from './scoring/tier-b-outliers';
 export type { DetectedContract } from './scoring/tier-b-contract';
 export { checkContract, detectContract, extractRunOutput } from './scoring/tier-b-contract';
+export { ANCHOR_STORE_VERSION, AnchorStore, defaultAnchorsPath } from './store/anchor-store';
+export { buildJudgePrompt } from './scoring/tier-c-prompt';
+export type { JudgeClient, JudgeResponse } from './scoring/judge-client';
+export { DefaultJudgeClient } from './scoring/judge-client';
