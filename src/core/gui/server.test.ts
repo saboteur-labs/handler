@@ -219,6 +219,82 @@ describe('startGuiServer', () => {
     });
   });
 
+  describe('GET /api/runs/:runId/transcript', () => {
+    it('returns 200 with RunTranscript JSON for a known run with sidechain (Req 53)', async () => {
+      const mockTranscript = {
+        taskPrompt: 'Do something useful',
+        turns: [{ textBlocks: ['I will help.'], toolCalls: [] }],
+        stopReason: 'end_turn',
+      };
+      mockIngest.mockReturnValue([
+        makeRun({
+          identityKey: USER_KEY,
+          runId: 'run-transcript-1',
+          agentName: 'alpha',
+          sidechainPath: '/fake/sidechain.jsonl',
+          status: 'completed',
+        }),
+      ]);
+
+      // Mock getRunTranscript to return a transcript without hitting disk.
+      const transcriptMod = await import('./transcript');
+      vi.spyOn(transcriptMod, 'getRunTranscript').mockReturnValue(
+        mockTranscript as unknown as Awaited<ReturnType<typeof transcriptMod.getRunTranscript>>,
+      );
+
+      server = await startGuiServer(0, assetsDir, makeCtx());
+
+      const res = await fetch(`${server.url}/api/runs/run-transcript-1/transcript`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toMatch(/application\/json/);
+      const body = (await res.json()) as {
+        taskPrompt: string;
+        turns: unknown[];
+        stopReason: string;
+      };
+      expect(body.taskPrompt).toBe('Do something useful');
+      expect(Array.isArray(body.turns)).toBe(true);
+      expect(body.stopReason).toBe('end_turn');
+
+      vi.restoreAllMocks();
+    });
+
+    it('returns 404 with "Run not found." for an unknown runId (Req 53)', async () => {
+      mockIngest.mockReturnValue([]);
+      server = await startGuiServer(0, assetsDir, makeCtx());
+
+      const res = await fetch(`${server.url}/api/runs/nonexistent-run/transcript`);
+      expect(res.status).toBe(404);
+      const body = (await res.json()) as { error: string };
+      expect(body.error).toBe('Run not found.');
+    });
+
+    it('returns 404 with "Transcript not available for this run." when run exists but sidechain is unavailable (Req 53)', async () => {
+      mockIngest.mockReturnValue([
+        makeRun({
+          identityKey: USER_KEY,
+          runId: 'run-incomplete-1',
+          agentName: 'alpha',
+          sidechainPath: undefined,
+          status: 'incomplete' as Run['status'],
+          tags: ['incomplete'],
+        }),
+      ]);
+      server = await startGuiServer(0, assetsDir, makeCtx());
+
+      const res = await fetch(`${server.url}/api/runs/run-incomplete-1/transcript`);
+      expect(res.status).toBe(404);
+      const body = (await res.json()) as { error: string };
+      expect(body.error).toBe('Transcript not available for this run.');
+    });
+
+    it('returns 405 for POST /api/runs/:runId/transcript (Req 53)', async () => {
+      server = await startGuiServer(0, assetsDir, makeCtx());
+      const res = await fetch(`${server.url}/api/runs/run-1/transcript`, { method: 'POST' });
+      expect(res.status).toBe(405);
+    });
+  });
+
   describe('unknown /api/* routes', () => {
     it('returns 404 for unknown API routes', async () => {
       server = await startGuiServer(0, assetsDir, makeCtx());
