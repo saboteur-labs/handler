@@ -23,11 +23,14 @@ interface RunStoreFile {
  * transcripts, so a store written under a different version is discarded rather
  * than migrated. Bump this whenever the stored `Run` shape changes (it became
  * 2 when runs gained `cwd`/`sessionId`/`sidechainPath` for scoring, and 3 when
- * they gained per-run `telemetry`). The bump is also the backfill trigger: a
- * stale store is discarded and the next ingest rebuilds it from transcripts
- * with the new fields populated for every run whose sub-transcript still exists.
+ * they gained per-run `telemetry`). Bumped to 5 to cover: (4) the upsert-capable
+ * RunStore baseline required by the SubagentStop hook, and (5) the `source` field
+ * (`'hook' | 'transcript' | undefined`) added to `Run` in the hook ingestion task.
+ * The bump is also the backfill trigger: a stale store is discarded and the next
+ * ingest rebuilds it from transcripts with the new fields populated for every run
+ * whose sub-transcript still exists.
  */
-export const RUN_STORE_VERSION = 3;
+export const RUN_STORE_VERSION = 5;
 
 /** Default run-store location: `~/.handler/runs.json`. */
 export function defaultRunStorePath(): string {
@@ -52,6 +55,21 @@ export class RunStore {
     this.persist();
   }
 
+  /**
+   * Insert or replace a run. If a record with the same `(identityKey, runId)`
+   * already exists it is replaced in-place (preserving array order); otherwise
+   * the run is appended. Unlike `add`, an existing record is always overwritten.
+   */
+  upsert(run: Run): void {
+    const index = this.runs.findIndex((existing) => isSameRun(existing, run));
+    if (index === -1) {
+      this.runs.push(run);
+    } else {
+      this.runs[index] = run;
+    }
+    this.persist();
+  }
+
   /** All stored runs, in insertion order. */
   list(): Run[] {
     return [...this.runs];
@@ -60,6 +78,11 @@ export class RunStore {
   /** Runs belonging to one agent, by its `identityKey`. */
   forAgent(identityKey: string): Run[] {
     return this.runs.filter((run) => run.identityKey === identityKey);
+  }
+
+  /** Look up a single run by `(identityKey, runId)`, or `undefined` if absent. */
+  forRun(identityKey: string, runId: string): Run | undefined {
+    return this.runs.find((run) => run.identityKey === identityKey && run.runId === runId);
   }
 
   private persist(): void {
