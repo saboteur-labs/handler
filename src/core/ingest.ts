@@ -41,9 +41,16 @@ export interface IngestOptions {
  */
 export function ingest(options: IngestOptions): Run[] {
   const store = new RunStore(options.storePath);
+  // In-process dedup: tracks agentIds seen within this single ingest call.
+  // Prevents calling assembleRun or store.upsert more than once for the same
+  // agentId when it appears in both a top-level transcript and a sidechain.
+  // The store's (identityKey, runId) upsert no-op remains as a cross-call guard.
+  const seenAgentIds = new Set<string>();
 
   for (const transcript of discoverTranscripts(options.projectsRoot)) {
     for (const raw of extractRuns(readJsonl(transcript))) {
+      if (seenAgentIds.has(raw.agentId)) continue;
+      seenAgentIds.add(raw.agentId);
       const run = assembleRun(raw, options.sources, transcript);
       if (run !== null) {
         // Transcript is authoritative, but the first transcript snapshot of a
@@ -62,6 +69,8 @@ export function ingest(options: IngestOptions): Run[] {
   for (const sidechainPath of discoverSidechains(options.projectsRoot)) {
     const parentAgentId = parseSidechainParentAgentId(sidechainPath);
     for (const raw of extractRuns(readJsonl(sidechainPath))) {
+      if (seenAgentIds.has(raw.agentId)) continue;
+      seenAgentIds.add(raw.agentId);
       const run = assembleRun(raw, options.sources, sidechainPath, parentAgentId);
       if (run !== null) {
         const existing = store.forRun(run.identityKey, run.runId);

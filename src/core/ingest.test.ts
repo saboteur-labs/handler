@@ -280,3 +280,177 @@ describe('ingest — sidechain (nested subagent) discovery', () => {
     expect(runs.find((r) => r.runId === 'agent-2')).toBeUndefined();
   });
 });
+
+describe('ingest — in-process deduplication', () => {
+  let repoRoot: string;
+  let projectsRoot: string;
+  let storePath: string;
+  let projectDir: string;
+
+  beforeEach(() => {
+    repoRoot = mkdtempSync(join(tmpdir(), 'handler-repo-'));
+    projectsRoot = mkdtempSync(join(tmpdir(), 'handler-projects-'));
+    storePath = join(mkdtempSync(join(tmpdir(), 'handler-store-')), 'runs.json');
+    projectDir = join(projectsRoot, '-encoded-project');
+    mkdirSync(projectDir, { recursive: true });
+
+    const agentsDir = join(repoRoot, '.claude', 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(join(agentsDir, 'reviewer.md'), 'reviewer def', 'utf8');
+  });
+
+  afterEach(() => {
+    rmSync(repoRoot, { recursive: true, force: true });
+    rmSync(projectsRoot, { recursive: true, force: true });
+    rmSync(join(storePath, '..'), { recursive: true, force: true });
+  });
+
+  it('deduplicates a run whose agentId appears in both a top-level transcript and a sidechain', () => {
+    // Top-level transcript records reviewer as agent-1
+    writeFileSync(
+      join(projectDir, 'session.jsonl'),
+      JSON.stringify({
+        type: 'user',
+        cwd: repoRoot,
+        sessionId: 'session',
+        toolUseResult: {
+          status: 'completed',
+          agentId: 'agent-1',
+          agentType: 'reviewer',
+          totalDurationMs: 1000,
+          totalTokens: 500,
+          totalToolUseCount: 3,
+          toolStats: { readCount: 2 },
+        },
+      }),
+      'utf8',
+    );
+
+    // A sidechain file also contains the same agentId (agent-1) as a Task result
+    const subagentsDir = join(projectDir, 'session', 'subagents');
+    mkdirSync(subagentsDir, { recursive: true });
+    writeFileSync(
+      join(subagentsDir, 'agent-agent-99.jsonl'),
+      JSON.stringify({
+        type: 'user',
+        cwd: repoRoot,
+        sessionId: 'session',
+        toolUseResult: {
+          status: 'completed',
+          agentId: 'agent-1',
+          agentType: 'reviewer',
+          totalDurationMs: 1000,
+          totalTokens: 500,
+          totalToolUseCount: 3,
+          toolStats: { readCount: 2 },
+        },
+      }),
+      'utf8',
+    );
+
+    const runs = ingest({ sources: [repoSource(repoRoot)], projectsRoot, storePath });
+
+    // Only one record for agent-1 — the duplicate is skipped
+    const reviewerRuns = runs.filter((r) => r.runId === 'agent-1');
+    expect(reviewerRuns).toHaveLength(1);
+  });
+
+  it('writes both runs when two different agentIds appear in the same sidechain', () => {
+    // Top-level transcript with a dummy entry so the session directory is valid
+    writeFileSync(
+      join(projectDir, 'session.jsonl'),
+      JSON.stringify({
+        type: 'user',
+        cwd: repoRoot,
+        sessionId: 'session',
+        toolUseResult: {
+          status: 'completed',
+          agentId: 'agent-0',
+          agentType: 'reviewer',
+          totalDurationMs: 500,
+          totalTokens: 100,
+          totalToolUseCount: 1,
+          toolStats: { readCount: 0 },
+        },
+      }),
+      'utf8',
+    );
+
+    const agentsDir = join(repoRoot, '.claude', 'agents');
+    writeFileSync(join(agentsDir, 'linter.md'), 'linter def', 'utf8');
+
+    // Sidechain has two different agentIds
+    const subagentsDir = join(projectDir, 'session', 'subagents');
+    mkdirSync(subagentsDir, { recursive: true });
+    writeFileSync(
+      join(subagentsDir, 'agent-agent-0.jsonl'),
+      [
+        JSON.stringify({
+          type: 'user',
+          cwd: repoRoot,
+          sessionId: 'session',
+          toolUseResult: {
+            status: 'completed',
+            agentId: 'agent-1',
+            agentType: 'reviewer',
+            totalDurationMs: 800,
+            totalTokens: 300,
+            totalToolUseCount: 2,
+            toolStats: { readCount: 1 },
+          },
+        }),
+        JSON.stringify({
+          type: 'user',
+          cwd: repoRoot,
+          sessionId: 'session',
+          toolUseResult: {
+            status: 'completed',
+            agentId: 'agent-2',
+            agentType: 'linter',
+            totalDurationMs: 600,
+            totalTokens: 200,
+            totalToolUseCount: 1,
+            toolStats: { readCount: 0 },
+          },
+        }),
+      ].join('\n'),
+      'utf8',
+    );
+
+    const runs = ingest({ sources: [repoSource(repoRoot)], projectsRoot, storePath });
+
+    // Both nested runs should be stored
+    expect(runs.find((r) => r.runId === 'agent-1')).toBeDefined();
+    expect(runs.find((r) => r.runId === 'agent-2')).toBeDefined();
+  });
+
+  it('handles the same agentId across two separate ingest calls without error', () => {
+    writeFileSync(
+      join(projectDir, 'session.jsonl'),
+      JSON.stringify({
+        type: 'user',
+        cwd: repoRoot,
+        sessionId: 'session',
+        toolUseResult: {
+          status: 'completed',
+          agentId: 'agent-1',
+          agentType: 'reviewer',
+          totalDurationMs: 1000,
+          totalTokens: 500,
+          totalToolUseCount: 3,
+          toolStats: { readCount: 2 },
+        },
+      }),
+      'utf8',
+    );
+
+    const sources = [repoSource(repoRoot)];
+    // First call — ingests and stores
+    ingest({ sources, projectsRoot, storePath });
+    // Second call — store's upsert no-ops (not the in-process set), no error
+    const second = ingest({ sources, projectsRoot, storePath });
+
+    // Store still has exactly one record
+    expect(second.filter((r) => r.runId === 'agent-1')).toHaveLength(1);
+  });
+});

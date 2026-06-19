@@ -86,7 +86,7 @@ The existing pipeline is: `discoverTranscripts` (top-level `.jsonl` only) → `r
 
 ---
 
-### Task 5: Deduplication guard — block duplicate `agentId` ingestion
+### Task 5: Deduplication guard — block duplicate `agentId` ingestion [COMPLETE]
 
 **What:** Add a deduplication check so a run whose `agentId` has already been ingested (from any path) is skipped, not written again.
 **Files:** `src/core/ingest.ts`, `src/core/ingest.test.ts` (extend)
