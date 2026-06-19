@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/saboteur-labs/handler/compare/handler-v0.1.1...handler-v0.1.2) (2026-06-19)
+
+
+### Features
+
+* **scoring:** add Tier C judged-quality signal (opt-in LLM judge) ([a66b8bf](https://github.com/saboteur-labs/handler/commit/a66b8bfa99f01553210903bde7b6aafcec8cf90c))
+* **scoring:** add Tier C judged-quality signal (opt-in LLM judge) ([f69e191](https://github.com/saboteur-labs/handler/commit/f69e1916fcc16b5be97b719c99c470bab07b4d72))
+
 ## [0.1.1](https://github.com/saboteur-labs/handler/compare/handler-v0.1.0...handler-v0.1.1) (2026-06-19)
 
 
