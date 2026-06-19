@@ -114,3 +114,11 @@ export type {
   TierCDetail,
 } from './gui/index';
 export { getAgentDetail, listAgents, startGuiServer } from './gui/index';
+export type {
+  ReadTranscriptOptions,
+  RunTranscript,
+  TranscriptToolCall,
+  TranscriptToolResult,
+  TranscriptTurn,
+} from './transcripts/transcript';
+export { readTranscript } from './transcripts/transcript';
