@@ -68,3 +68,32 @@ export interface ConventionsCheckResult {
   readonly passed: boolean;
   readonly detail: string | null;
 }
+
+/** Mirror of TranscriptToolResult from src/core/transcripts/transcript.ts */
+export interface TranscriptToolResultData {
+  readonly toolUseId: string;
+  readonly isError: boolean;
+  readonly content: string;
+  readonly truncated: boolean;
+}
+
+/** Mirror of TranscriptToolCall from src/core/transcripts/transcript.ts */
+export interface TranscriptToolCallData {
+  readonly id: string;
+  readonly name: string;
+  readonly input: Record<string, unknown>;
+  readonly result: TranscriptToolResultData | undefined;
+}
+
+/** Mirror of TranscriptTurn from src/core/transcripts/transcript.ts */
+export interface TranscriptTurnData {
+  readonly textBlocks: readonly string[];
+  readonly toolCalls: readonly TranscriptToolCallData[];
+}
+
+/** Mirror of RunTranscript from src/core/transcripts/transcript.ts */
+export interface RunTranscriptData {
+  readonly taskPrompt: string | undefined;
+  readonly turns: readonly TranscriptTurnData[];
+  readonly stopReason: string | undefined;
+}
