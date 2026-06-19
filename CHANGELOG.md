@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/saboteur-labs/handler/compare/handler-v0.1.0...handler-v0.1.1) (2026-06-19)
+
+
+### Features
+
+* **scoring:** add Tier B reference-relative scoring ([#12](https://github.com/saboteur-labs/handler/issues/12)) ([070b9a1](https://github.com/saboteur-labs/handler/commit/070b9a160cb30a7a31febe6a7a11c3ca32f04655))
+* **trend:** queryable per-agent trend command ([#10](https://github.com/saboteur-labs/handler/issues/10)) ([a54bfa8](https://github.com/saboteur-labs/handler/commit/a54bfa894ff00b4891be8e3ad0842cf2035b9fa7))
+
 ## 0.1.0 (2026-06-18)
 
 ### Features
