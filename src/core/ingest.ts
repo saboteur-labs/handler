@@ -10,6 +10,8 @@
  * This layer is pure wiring: every decision (what counts as a run, how it is
  * attributed, what is dropped) lives in the modules it composes.
  */
+import { existsSync } from 'node:fs';
+
 import { assembleRun, type Run } from './run';
 import type { AgentSource } from './sources/source';
 import { RunStore } from './store/run-store';
@@ -47,21 +49,39 @@ export function ingest(options: IngestOptions): Run[] {
   // The store's (identityKey, runId) upsert no-op remains as a cross-call guard.
   const seenAgentIds = new Set<string>();
 
+  /**
+   * Persist a freshly-assembled run. Transcript is authoritative, but the first
+   * transcript snapshot of a run wins: enrich a real-time `hook` stub, yet never
+   * overwrite an existing transcript record — re-ingesting after a definition
+   * edit must preserve each run's original definition snapshot so history
+   * survives renames/edits/deletes (mirrors the old `add` dedup-no-op).
+   *
+   * The one exception is a *stale sub-transcript locator*: when a stored record
+   * points at a sidechain that no longer resolves but the fresh assembly now
+   * locates a real one, heal just the locator and its derived telemetry. This
+   * self-corrects records persisted with a bad path (e.g. nested runs written
+   * before the sibling-locator fix) without disturbing the frozen snapshot.
+   */
+  function persist(run: Run): void {
+    const existing = store.forRun(run.identityKey, run.runId);
+    if (existing === undefined || existing.source === 'hook') {
+      store.upsert({ ...run, source: 'transcript' });
+      return;
+    }
+    const locatorStale =
+      existing.sidechainPath === undefined || !existsSync(existing.sidechainPath);
+    if (locatorStale && run.sidechainPath !== undefined && existsSync(run.sidechainPath)) {
+      store.upsert({ ...existing, sidechainPath: run.sidechainPath, telemetry: run.telemetry });
+    }
+  }
+
   for (const transcript of discoverTranscripts(options.projectsRoot)) {
     for (const raw of extractRuns(readJsonl(transcript))) {
       if (seenAgentIds.has(raw.agentId)) continue;
       seenAgentIds.add(raw.agentId);
       const run = assembleRun(raw, options.sources, transcript);
       if (run !== null) {
-        // Transcript is authoritative, but the first transcript snapshot of a
-        // run wins: enrich a real-time `hook` stub, yet never overwrite an
-        // existing transcript record — re-ingesting after a definition edit
-        // must preserve each run's original definition snapshot so history
-        // survives renames/edits (mirrors the old `add` dedup-no-op).
-        const existing = store.forRun(run.identityKey, run.runId);
-        if (existing === undefined || existing.source === 'hook') {
-          store.upsert({ ...run, source: 'transcript' });
-        }
+        persist(run);
       }
     }
   }
@@ -73,10 +93,7 @@ export function ingest(options: IngestOptions): Run[] {
       seenAgentIds.add(raw.agentId);
       const run = assembleRun(raw, options.sources, sidechainPath, parentAgentId);
       if (run !== null) {
-        const existing = store.forRun(run.identityKey, run.runId);
-        if (existing === undefined || existing.source === 'hook') {
-          store.upsert({ ...run, source: 'transcript' });
-        }
+        persist(run);
       }
     }
   }

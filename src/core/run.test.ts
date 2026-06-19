@@ -65,6 +65,49 @@ describe('assembleRun', () => {
     expect(run?.sidechainPath).toBe('/projects/-encoded/sess-1/subagents/agent-agent-1.jsonl');
   });
 
+  it('locates a nested run sub-transcript as a sibling in the same subagents dir', () => {
+    // A nested run is extracted from its parent agent's sidechain file. Its own
+    // sub-transcript is a sibling agent-<agentId>.jsonl in that same directory —
+    // not a path rebuilt from the (parent) session id, which would double the
+    // subagents segment and miss the file.
+    const parentSidechain = '/projects/-encoded/sess-1/subagents/agent-parent-9.jsonl';
+    const run = assembleRun(
+      rawRun({ cwd: root, agentId: 'nested-7' }),
+      [repoSource(root)],
+      parentSidechain,
+      'parent-9',
+    );
+    expect(run?.parentAgentId).toBe('parent-9');
+    expect(run?.sidechainPath).toBe('/projects/-encoded/sess-1/subagents/agent-nested-7.jsonl');
+  });
+
+  it('captures nested-run telemetry from its sibling sub-transcript when present', () => {
+    writeAgent('reviewer', 'definition body');
+    const sidechainDir = join(root, 'sess-1', 'subagents');
+    mkdirSync(sidechainDir, { recursive: true });
+    const parentSidechain = join(sidechainDir, 'agent-parent-9.jsonl');
+    writeFileSync(
+      join(sidechainDir, 'agent-nested-7.jsonl'),
+      JSON.stringify({
+        type: 'assistant',
+        timestamp: '2026-06-18T10:00:00.000Z',
+        message: {
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'end_turn',
+          content: [],
+        },
+      }),
+      'utf8',
+    );
+    const run = assembleRun(
+      rawRun({ cwd: root, agentId: 'nested-7' }),
+      [repoSource(root)],
+      parentSidechain,
+      'parent-9',
+    );
+    expect(run?.telemetry?.turns).toHaveLength(1);
+  });
+
   it('captures per-run telemetry from the sidechain when present', () => {
     writeAgent('reviewer', 'definition body');
     const transcript = join(root, 'sess-1.jsonl');

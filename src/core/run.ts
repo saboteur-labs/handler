@@ -105,7 +105,7 @@ export function assembleRun(
     tags.push('orphan');
   }
 
-  const sidechainPath = sidechainPathFor(raw, transcriptPath);
+  const sidechainPath = sidechainPathFor(raw, transcriptPath, parentAgentId);
 
   return {
     identityKey: identityKey(identity),
@@ -141,12 +141,26 @@ function readRunTelemetry(sidechainPath: string | undefined): RunTelemetrySummar
 }
 
 /**
- * Derive the per-run sub-transcript path. Claude Code stores it at
- * `<projectDir>/<sessionId>/subagents/agent-<agentId>.jsonl`, alongside the
- * parent transcript. Returns `undefined` when the session id is missing, so
- * scoring can tell a locatable run from one it cannot reach.
+ * Derive the per-run sub-transcript path. Claude Code stores every subagent
+ * run of a session — top-level and nested alike — flat in one
+ * `<projectDir>/<sessionId>/subagents/` directory, named `agent-<agentId>.jsonl`.
+ *
+ * A nested run (`parentAgentId` set) is extracted from its parent's sidechain
+ * file, which already lives in that directory, so its own sub-transcript is a
+ * sibling: `<dirname(parentSidechain)>/agent-<agentId>.jsonl`. A top-level run
+ * is extracted from `<projectDir>/<sessionId>.jsonl`, so the directory is built
+ * from the session id; that path is unreachable without a session id, so we
+ * return `undefined` to let scoring distinguish a locatable run from one it
+ * cannot reach.
  */
-function sidechainPathFor(raw: RawRun, transcriptPath: string): string | undefined {
+function sidechainPathFor(
+  raw: RawRun,
+  transcriptPath: string,
+  parentAgentId: string | undefined,
+): string | undefined {
+  if (parentAgentId !== undefined) {
+    return join(dirname(transcriptPath), `agent-${raw.agentId}.jsonl`);
+  }
   if (raw.sessionId === undefined) {
     return undefined;
   }

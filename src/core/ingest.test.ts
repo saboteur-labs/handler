@@ -194,6 +194,80 @@ describe('ingest — sidechain (nested subagent) discovery', () => {
     expect(nestedRun?.identityKey).toBe(identityKey(agentIdentity(repoSource(repoRoot), 'linter')));
   });
 
+  it('locates a nested run sub-transcript as its sibling and captures telemetry', () => {
+    const subagentsDir = join(projectDir, 'session', 'subagents');
+    mkdirSync(subagentsDir, { recursive: true });
+    // Parent (reviewer) sidechain references the nested linter run.
+    writeFileSync(
+      join(subagentsDir, 'agent-agent-1.jsonl'),
+      sidechainTaskEntry('linter', 'agent-2', repoRoot),
+      'utf8',
+    );
+    // The nested run's OWN sub-transcript is a sibling in the same dir.
+    const nestedSub = join(subagentsDir, 'agent-agent-2.jsonl');
+    writeFileSync(
+      nestedSub,
+      JSON.stringify({
+        type: 'assistant',
+        timestamp: '2026-06-18T10:00:00.000Z',
+        message: {
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'end_turn',
+          content: [],
+        },
+      }),
+      'utf8',
+    );
+
+    const runs = ingest({ sources: [repoSource(repoRoot)], projectsRoot, storePath });
+
+    const nestedRun = runs.find((r) => r.agentName === 'linter');
+    expect(nestedRun?.sidechainPath).toBe(nestedSub);
+    expect(nestedRun?.telemetry?.turns).toHaveLength(1);
+  });
+
+  it('self-heals a stale nested sub-transcript locator on re-ingest', () => {
+    const subagentsDir = join(projectDir, 'session', 'subagents');
+    mkdirSync(subagentsDir, { recursive: true });
+    writeFileSync(
+      join(subagentsDir, 'agent-agent-1.jsonl'),
+      sidechainTaskEntry('linter', 'agent-2', repoRoot),
+      'utf8',
+    );
+    const nestedSub = join(subagentsDir, 'agent-agent-2.jsonl');
+    writeFileSync(
+      nestedSub,
+      JSON.stringify({
+        type: 'assistant',
+        timestamp: '2026-06-18T10:00:00.000Z',
+        message: {
+          usage: { input_tokens: 1, output_tokens: 1 },
+          stop_reason: 'end_turn',
+          content: [],
+        },
+      }),
+      'utf8',
+    );
+
+    // First ingest yields a correct record; simulate a record persisted by the
+    // buggy build by overwriting its locator with a non-existent doubled path.
+    ingest({ sources: [repoSource(repoRoot)], projectsRoot, storePath });
+    const store = new RunStore(storePath);
+    const broken = store.list().find((r) => r.agentName === 'linter');
+    expect(broken).toBeDefined();
+    const badPath = join(subagentsDir, 'session', 'subagents', 'agent-agent-2.jsonl');
+    store.upsert({ ...broken!, sidechainPath: badPath, telemetry: undefined });
+    expect(
+      new RunStore(storePath).list().find((r) => r.agentName === 'linter')?.telemetry,
+    ).toBeUndefined();
+
+    // Re-ingest should heal the locator back to the real sibling and recover telemetry.
+    ingest({ sources: [repoSource(repoRoot)], projectsRoot, storePath });
+    const healed = new RunStore(storePath).list().find((r) => r.agentName === 'linter');
+    expect(healed?.sidechainPath).toBe(nestedSub);
+    expect(healed?.telemetry?.turns).toHaveLength(1);
+  });
+
   it('ingests deeply-nested sidechains (depth ≥ 2) with correct parentAgentId at each level', () => {
     // reviewer (agent-1) spawns linter (agent-2)
     const subagentsDir = join(projectDir, 'session', 'subagents');
