@@ -18,3 +18,5 @@ export type {
 export { getAgentDetail } from './agent-detail';
 export type { GuiServerHandle } from './server';
 export { startGuiServer } from './server';
+export type { RunTranscript } from '../transcripts/transcript';
+export { getRunTranscript } from './transcript';

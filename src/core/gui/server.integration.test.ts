@@ -8,13 +8,17 @@
  * HTTP serialisation.
  */
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { dirname, join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, it, test } from 'vitest';
 
 import type { CliContext } from '../../cli/commands/source';
-import { SourceRegistry, userSource } from '../index';
+import { readTranscript, SourceRegistry, userSource } from '../index';
+import { RunStore } from '../store/run-store';
+import type { Run } from '../run';
 import { startGuiServer, type GuiServerHandle } from './server';
+import { getRunTranscript } from './transcript';
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -47,6 +51,19 @@ function completedEntry(opts: {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Fixture paths
+// ---------------------------------------------------------------------------
+
+/** Absolute path to the sidechain fixture JSONL used by transcript tests. */
+const SIDECHAIN_FIXTURE_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../__fixtures__/transcript/sidechain.jsonl',
+);
+
+/** Run ID used for the pre-seeded transcript test run. */
+const TRANSCRIPT_RUN_ID = 'test-transcript-run-1';
 
 // ---------------------------------------------------------------------------
 // Suite setup — create temp dir, write fixture files, start server
@@ -130,6 +147,31 @@ beforeAll(async () => {
     }),
     'utf8',
   );
+
+  // Pre-seed the RunStore with a transcript test run so the server can serve
+  // GET /api/runs/:runId/transcript without needing a matching JSONL in projectsRoot.
+  // `ingest` preserves existing `source: 'transcript'` records, so this run
+  // survives the ingest call the server makes on each request.
+  // Use a distinct identity key (beta agent) so this run does not interfere
+  // with the alpha-agent tests that assert run count and lastRunDate.
+  const transcriptRun: Run = {
+    identityKey: JSON.stringify(['user', source.root, 'beta']),
+    runId: TRANSCRIPT_RUN_ID,
+    agentName: 'beta',
+    cwd: agentsHome,
+    sessionId: 'session-transcript-1',
+    sidechainPath: SIDECHAIN_FIXTURE_PATH,
+    timestamp: '2025-04-01T10:00:00.000Z',
+    status: 'completed',
+    totalDurationMs: 2000,
+    totalTokens: 600,
+    totalToolUseCount: 1,
+    toolStats: { bashCount: 1 },
+    definitionSnapshot: agentDefinition,
+    tags: [],
+    source: 'transcript',
+  };
+  new RunStore(storePath).upsert(transcriptRun);
 
   // Create a minimal SPA assets directory (the server needs index.html to exist).
   const assetsDir = join(tmpDir, 'assets');
@@ -293,6 +335,106 @@ describe('GUI server integration — method rejection', () => {
   it('DELETE /api/agents/:id returns 405', async () => {
     const encoded = encodeURIComponent(alphaIdentityKey);
     const res = await fetch(`${serverUrl}/api/agents/${encoded}`, { method: 'DELETE' });
+    expect(res.status).toBe(405);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit-level checks (no server) — Reqs 45, 46, 47
+// ---------------------------------------------------------------------------
+
+test('readTranscript over fixture returns correct taskPrompt (Req 45, 46)', () => {
+  const result = readTranscript(SIDECHAIN_FIXTURE_PATH);
+  expect(result.taskPrompt).toBe('Implement the new feature as described in the spec.');
+});
+
+test('readTranscript over fixture returns 1 turn with 1 tool call (Req 45)', () => {
+  const result = readTranscript(SIDECHAIN_FIXTURE_PATH);
+  expect(result.turns).toHaveLength(1);
+  expect(result.turns[0]?.toolCalls).toHaveLength(1);
+  expect(result.turns[0]?.toolCalls[0]?.name).toBe('Bash');
+});
+
+test('readTranscript fixture tool result is truncated (Req 47)', () => {
+  const result = readTranscript(SIDECHAIN_FIXTURE_PATH);
+  const toolCall = result.turns[0]?.toolCalls[0];
+  expect(toolCall?.result?.truncated).toBe(true);
+});
+
+test('readTranscript fixture stop reason is end_turn (Req 45)', () => {
+  const result = readTranscript(SIDECHAIN_FIXTURE_PATH);
+  expect(result.stopReason).toBe('end_turn');
+});
+
+test('getRunTranscript returns same RunTranscript as readTranscript (Req 45, 46)', () => {
+  const run: Run = {
+    identityKey: JSON.stringify(['user', '/test/path', 'alpha']),
+    runId: 'unit-test-run-1',
+    agentName: 'alpha',
+    cwd: '/test',
+    sessionId: 'session-unit-1',
+    sidechainPath: SIDECHAIN_FIXTURE_PATH,
+    timestamp: '2025-04-01T10:00:00.000Z',
+    status: 'completed',
+    totalDurationMs: 1000,
+    totalTokens: 300,
+    totalToolUseCount: 1,
+    toolStats: {},
+    definitionSnapshot: 'description: alpha',
+    tags: [],
+  };
+  const result = getRunTranscript(run.runId, [run]);
+  expect(result).not.toBeNull();
+  expect(result?.taskPrompt).toBe('Implement the new feature as described in the spec.');
+  expect(result?.turns).toHaveLength(1);
+  expect(result?.turns[0]?.toolCalls[0]?.name).toBe('Bash');
+  expect(result?.turns[0]?.toolCalls[0]?.result?.truncated).toBe(true);
+});
+
+// ---------------------------------------------------------------------------
+// Server endpoint tests — GET /api/runs/:runId/transcript (Req 53)
+// ---------------------------------------------------------------------------
+
+describe('GUI server integration — GET /api/runs/:runId/transcript', () => {
+  it('returns HTTP 200 with correct shape for a known run (Reqs 45, 47, 53)', async () => {
+    const res = await fetch(`${serverUrl}/api/runs/${TRANSCRIPT_RUN_ID}/transcript`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/application\/json/);
+
+    const body = (await res.json()) as {
+      taskPrompt: unknown;
+      turns: Array<{
+        toolCalls: Array<{
+          name: string;
+          result: { truncated: boolean } | null | undefined;
+        }>;
+      }>;
+      stopReason: unknown;
+    };
+
+    // Req 45: correct shape
+    expect(body.taskPrompt).toBe('Implement the new feature as described in the spec.');
+    expect(Array.isArray(body.turns)).toBe(true);
+    expect(body.turns).toHaveLength(1);
+    expect(body.turns[0]?.toolCalls).toHaveLength(1);
+    expect(body.turns[0]?.toolCalls[0]?.name).toBe('Bash');
+    expect(body.stopReason).toBe('end_turn');
+
+    // Req 47: truncation
+    expect(body.turns[0]?.toolCalls[0]?.result?.truncated).toBe(true);
+  });
+
+  it('returns HTTP 404 for an unknown run ID (Req 53)', async () => {
+    const res = await fetch(`${serverUrl}/api/runs/unknown-run-id/transcript`);
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('Run not found.');
+  });
+
+  it('returns HTTP 405 for POST (Req 53)', async () => {
+    const res = await fetch(`${serverUrl}/api/runs/${TRANSCRIPT_RUN_ID}/transcript`, {
+      method: 'POST',
+    });
     expect(res.status).toBe(405);
   });
 });

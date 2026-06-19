@@ -1,6 +1,6 @@
 # handler V1 — Feature Breakdown
 
-**Milestone scope:** v1 only. Source spec: `docs/spec-v1.md` (Reqs 22–38, US-10–US-16). MVP features are in `docs/features.md`.
+**Milestone scope:** v1 only. Source spec: `docs/spec-v1.md` (Reqs 22–53, US-10–US-18). MVP features are in `docs/features.md`.
 
 ### Feature 1: Queryable history & per-agent trend
 
@@ -77,6 +77,16 @@
 - _Reconstructability is proven:_ the parent run named by `parentAgentId` is itself ingestable (top-level session, or its own grandparent's sidechain for deeper nests), so `parentAgentId` joins back to the parent run and through it to the parent's full identity tuple, at arbitrary depth.
   **Notes:** Discovery must avoid double-counting **runs** — a nested run's identity is independent of its parent, so guard against ingesting the same `agentId` twice (e.g. from both the recursive walk and any future change to the top-level walk). The "spawned by" resolution must degrade gracefully when the parent run hasn't been ingested (or its definition is gone) — show the raw parent name/id rather than failing. Keep recursive discovery defensive per the MVP parse-defensively invariant (Req 7): interrupted/incomplete nested runs are kept-and-tagged, never dropped.
 
+### Feature 8: Run transcript view
+
+**Value:** A developer debugging a low-scoring or unexpected run can view the full conversation — task prompt, assistant turns, tool calls, and results — directly in the CLI or the GUI, without leaving the tool.
+**Vertical slice:** logic (`readTranscript` core function: parses sidechain JSONL into a structured `RunTranscript` model with ordered turns and interleaved tool calls/results, default 2 KB tool-output truncation) / interface (`handler transcript <agent> <runId>` CLI command with `--latest` and `--full` flags; transcript panel in the Feature 6 GUI per-agent / run-detail view).
+**Requirements covered:** 45, 46, 47, 48, 49, 50, 51, 52, 53
+**User stories:** US-18
+**Depends on:** Feature 6 (GUI shell / SPA) — Req 53 (GUI transcript panel) requires the Feature 6 per-agent detail and run-detail area to be in place. The CLI surface (Reqs 45–52) is independently shippable ahead of Feature 6.
+**Branch suggestion:** `feature/run-transcript-view`
+**Notes:** Hard invariants: fully local and read-only (Req 52 and the local-only constraint); no parsing or rendering logic in CLI or GUI — all logic in `src/core/` (Req 46, Req 53). Tool-result content truncated to 2 048 bytes by default (configurable); `--full` disables truncation. The `sidechainPath` is already resolved at ingest time — this feature is not a new ingestion path.
+
 ## Coverage check
 
 - **22, 23, 24, 25** → Feature 2 (Tier B)
@@ -86,11 +96,12 @@
 - **35, 36** → Feature 6 (GUI)
 - **37, 38** → Feature 5 (hook)
 - **39, 40, 41, 42, 43, 44** → Feature 7 (nested subagent capture)
-- Unassigned requirements: none — all of Reqs 22–44 are assigned to exactly one feature.
+- **45, 46, 47, 48, 49, 50, 51, 52, 53** → Feature 8 (run transcript view)
+- Unassigned requirements: none — all of Reqs 22–53 are assigned to exactly one feature.
 
 ## Summary
 
-- **Total features:** 7 (Reqs 22–44).
-- **Suggested build order:** 1 → (2, 3, 7 in parallel) → 4 → 5 → 6. Feature 1 is the enabling slice; 2, 3, and 7 are independent and can run in parallel; 4 needs 1 (and 2 for the full "expensive" view); 5 needs 1; 6 consumes 1–3 and ships last.
-- **Independently shippable:** Features 1, 2, 3, and 7 (each reads existing MVP stores/snapshots or reuses MVP discovery/attribution; no V1 dependencies).
-- **Risks:** Feature 3 (Tier C) — the only network/LLM path, carries the trust/opt-in/never-merge constraints. Feature 5 (hook) — reconciliation/dedup correctness. Feature 6 (GUI) — broadest dependency surface plus the "no logic in GUI" invariant.
+- **Total features:** 8 (Reqs 22–53).
+- **Suggested build order:** 1 → (2, 3, 7, 8-CLI in parallel) → 4 → 5 → 6 (incl. Feature 8 GUI panel). Feature 1 is the enabling slice; 2, 3, 7, and the CLI surface of 8 are independent and can run in parallel; 4 needs 1 (and 2 for the full "expensive" view); 5 needs 1; 6 consumes 1–3 and ships last, with the Feature 8 GUI transcript panel (Req 53) delivered as part of Feature 6.
+- **Independently shippable:** Features 1, 2, 3, 7, and the CLI portion of Feature 8 (Reqs 45–52; each reads existing MVP stores/snapshots or reuses MVP discovery/attribution; no V1 dependencies). Feature 8's GUI panel (Req 53) depends on Feature 6.
+- **Risks:** Feature 3 (Tier C) — the only network/LLM path, carries the trust/opt-in/never-merge constraints. Feature 5 (hook) — reconciliation/dedup correctness. Feature 6 (GUI) — broadest dependency surface plus the "no logic in GUI" invariant. Feature 8 (transcript view) — the GUI panel (Req 53) is a hard dependency on Feature 6 and must be accounted for in Feature 6 scope.

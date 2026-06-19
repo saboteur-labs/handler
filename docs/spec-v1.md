@@ -3,7 +3,7 @@
 **Milestone scope:** v1 only. MVP requirements (Reqs 1–21) live in `docs/spec.md` and are assumed shipped; v2 and post-MVP items are listed under Out of Scope (Deferred).
 **Status:** Draft
 **Source concept:** handler — observability and evaluation for the agents you build (`docs/concept.md`)
-**Requirement numbering:** continues the global sequence from `docs/spec.md`; v1 requirements begin at Req 22.
+**Requirement numbering:** continues the global sequence from `docs/spec.md`; v1 requirements begin at Req 22 and run through Req 53.
 
 ## Overview
 
@@ -47,6 +47,7 @@ _Secondary audiences (small teams; published-agent authors) are acknowledged in 
 - **US-15** [v1] As an agent author, I want optional real-time run capture via a hook, so I don't have to wait for transcript parsing.
 - **US-16** [v1] As an agent author, I want to optionally label a few of my own runs with a score and reasoning, when I choose to, so I can calibrate the judge to match my judgment.
 - **US-17** [v1] As an agent author, I want runs from agents that my agents spawn to appear in my roster, history, and scores — with a read-only "spawned by" annotation — so I can evaluate my full agent call tree, not just top-level runs.
+- **US-18** [v1] As an agent author, I want to view the actual conversation of a specific run — the task prompt, assistant turns, and tool activity — so I can understand what my agent did and why it scored the way it did.
 
 ## Functional Requirements
 
@@ -96,9 +97,22 @@ _Secondary audiences (small teams; published-agent authors) are acknowledged in 
 43. Interrupted or incomplete nested runs MUST be kept-and-tagged rather than dropped, consistent with the existing parse-defensively invariant (MVP Req 7). [US-17]
 44. The `show` and `trend` commands MUST resolve `parentAgentId` to the parent run's identity and display a read-only "spawned by <agent>" annotation per run. When the parent run has not been ingested or its definition is absent, the annotation MUST degrade gracefully — showing the raw parent name or id — and MUST NOT cause the command to fail. [US-17]
 
+**Run transcript view**
+
+45. The system MUST provide a core library function — `readTranscript(sidechainPath)` or equivalent — that parses a run's sidechain JSONL and returns a structured `RunTranscript` model containing, in order: the task prompt (from the first `user` entry's non-`tool_result` text content), an ordered sequence of turns, and each turn's components: assistant `text` blocks (the agent's prose output), `tool_use` blocks (`name`, `input`), and the corresponding `tool_result` blocks (`tool_use_id`, `is_error`, `content`) from the following `user` entry. [US-18]
+46. The function MUST be implemented in `src/core/` and MUST hold no CLI rendering logic. It MUST return empty/partial results rather than throwing when the sidechain is missing or malformed, consistent with the parse-defensively invariant. [US-18]
+47. Each tool-result content string in the returned model MUST be truncated to a configurable byte limit (default 2 048 bytes) in the standard model, with a flag on the model indicating truncation occurred. The caller MAY request the full payload via an options argument to disable truncation. [US-18]
+48. The system MUST provide a `handler transcript <agent> <runId>` CLI command that locates the stored run by agent name and run id, resolves its `sidechainPath`, calls the core transcript function, and renders the result to stdout. [US-18]
+49. The CLI command MUST support a `--latest` flag as a shorthand for the most-recent run of the named agent, so a developer can inspect the last run without first running `handler show` to retrieve a run id. [US-18]
+50. The CLI command MUST support a `--full` flag (or equivalent) that disables tool-output truncation, rendering the complete payload for all tool results. [US-18]
+51. The CLI command MUST render clearly distinguished sections for: (a) a header with run metadata (agent name, run id, timestamp, status); (b) the task prompt; (c) each assistant turn in order, with tool calls and their results interleaved; and (d) a footer with the run's stop reason. When the sidechain is unavailable (the run is tagged `incomplete` or `orphan`), the command MUST emit an informative message and exit non-zero rather than rendering a blank or partial transcript. [US-18]
+52. The CLI command MUST be read-only: it MUST NOT alter stored runs, scores, annotations, or agent definitions. [US-18]
+53. The per-agent detail / run-detail area in the Feature 6 GUI MUST surface a transcript panel for each run entry, consuming the same `readTranscript` core function and holding no parsing or logic of its own. This panel is a required deliverable of this feature and depends on the Feature 6 GUI shell being in place. [US-18]
+
 ## Constraints
 
-- **Local-first / privacy:** the only network/off-machine paths in v1 are the opt-in conventions-doc fetch (MVP) and the opt-in Tier C judged-quality call (Req 28); all Tier A/B checks and ingestion stay fully local.
+- **Local-first / privacy:** the only network/off-machine paths in v1 are the opt-in conventions-doc fetch (MVP) and the opt-in Tier C judged-quality call (Req 28); all Tier A/B checks, ingestion, and transcript reads stay fully local.
+- **Read-only / observe-only:** the transcript view (Reqs 45–53) is strictly read-only and MUST NOT alter any stored run, score, annotation, or agent definition. No logic for transcript parsing or rendering may live in the CLI or GUI surfaces — all parsing logic MUST reside in `src/core/`.
 - **Score separation:** the interpretive Tier C signal must never be folded into the deterministic score; it is shown separately with auditable reasoning. (Concept: Evaluation Baseline.)
 - **No invented thresholds:** Tier B references are self-relative (rolling median); any factor or window (outlier 2×, min-runs 5, unused-window) is a tunable default, not a hard-coded judgment. (Concept: Evaluation Baseline.)
 - **Trust / auditability:** because the judged-quality score risks producing signal the user doesn't trust, it must be auditable (reasoning attached) and opt-in. (Concept: Caveats — Assumption risk.)

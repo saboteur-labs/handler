@@ -25,6 +25,7 @@ import { registerNoteCommand } from './commands/note';
 import { registerShowCommand } from './commands/show';
 import type { CliContext } from './commands/source';
 import { registerSourceCommand } from './commands/source';
+import { registerTranscriptCommand } from './commands/transcript';
 import { registerTrendCommand } from './commands/trend';
 
 export interface RunOptions {
@@ -121,6 +122,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerDiffCommand(program, ctx);
   registerConventionsCommand(program, ctx);
   registerNoteCommand(program, ctx);
+  registerTranscriptCommand(program, ctx);
   registerTrendCommand(program, ctx);
   registerAnchorCommand(program, ctx);
   registerJudgeCommand(program, ctx);

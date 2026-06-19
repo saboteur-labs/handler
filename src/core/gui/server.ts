@@ -15,7 +15,7 @@ import { join, extname } from 'node:path';
 import type { CliContext } from '../../cli/commands/source';
 import { ingest, NoteStore, ScoreStore, SourceRegistry, TierBStore, TierCStore } from '../index';
 import { loadConventionsWithDefault } from '../conventions/conventions-store';
-import { getAgentDetail, listAgents } from './index';
+import { getAgentDetail, getRunTranscript, listAgents } from './index';
 
 // ---------------------------------------------------------------------------
 // MIME type lookup (covers the assets a typical SPA build produces)
@@ -150,6 +150,24 @@ function handleApiRequest(req: IncomingMessage, res: ServerResponse, ctx: CliCon
     }
 
     sendJson(res, 200, detail);
+    return;
+  }
+
+  // GET /api/runs/:runId/transcript
+  const transcriptMatch = pathname.match(/^\/api\/runs\/([^/]+)\/transcript$/);
+  if (transcriptMatch !== null) {
+    const runId = decodeURIComponent(transcriptMatch[1] ?? '');
+    const runExists = runs.find((r) => r.runId === runId) !== undefined;
+    if (!runExists) {
+      sendStatus(res, 404, 'Run not found.');
+      return;
+    }
+    const transcript = getRunTranscript(runId, runs);
+    if (transcript === null) {
+      sendStatus(res, 404, 'Transcript not available for this run.');
+      return;
+    }
+    sendJson(res, 200, transcript);
     return;
   }
 

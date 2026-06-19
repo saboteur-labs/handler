@@ -8,7 +8,7 @@
  * The API base URL is relative so the SPA can be served from the same origin
  * as the API server without configuration.
  */
-import type { AgentDetail, AgentSummary } from './types';
+import type { AgentDetail, AgentSummary, RunTranscriptData } from './types';
 
 const API_BASE = '/api/agents';
 
@@ -48,4 +48,26 @@ export async function fetchAgentDetail(identityKey: string): Promise<AgentDetail
   }
 
   return response.json() as Promise<AgentDetail>;
+}
+
+/**
+ * Fetch the transcript for a single run identified by `runId`.
+ *
+ * Calls `GET /api/runs/:runId/transcript` where the id is URL-encoded.
+ * Returns `null` on 404 (run not found or no transcript available).
+ * Propagates network errors and other non-2xx responses as thrown errors.
+ */
+export async function fetchRunTranscript(runId: string): Promise<RunTranscriptData | null> {
+  const url = `/api/runs/${encodeURIComponent(runId)}/transcript`;
+  const response = await fetch(url);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch run transcript: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json() as Promise<RunTranscriptData>;
 }
