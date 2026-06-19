@@ -66,7 +66,7 @@ The existing pipeline is: `discoverTranscripts` (top-level `.jsonl` only) → `r
 
 ---
 
-### Task 4: Ingest nested sidechain files — flat attribution and `parentAgentId` population
+### Task 4: Ingest nested sidechain files — flat attribution and `parentAgentId` population [COMPLETE]
 
 **What:** Extend the `ingest` orchestrator to discover sidechain files (Task 1), extract nested runs from each sidechain's own content (the nested agent's sidechain itself contains `Task` result entries for any agents it spawned), and call `assembleRun` with `parentAgentId` populated from the sidechain filename (Task 2).
 **Files:** `src/core/ingest.ts`, `src/core/run.ts` (`assembleRun` signature update), `src/core/ingest.test.ts`

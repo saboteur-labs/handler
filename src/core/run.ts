@@ -78,11 +78,15 @@ export interface Run {
 /**
  * Attribute and snapshot a `RawRun` against the registered `sources`, or return
  * `null` when the run names a built-in/plugin agent or matches no source.
+ *
+ * When processing a sidechain file, pass `parentAgentId` (extracted from the
+ * sidechain filename) so the returned `Run` records the nesting relationship.
  */
 export function assembleRun(
   raw: RawRun,
   sources: readonly AgentSource[],
   transcriptPath: string,
+  parentAgentId?: string,
 ): Run | null {
   const identity = resolveRunIdentity(raw, sources);
   if (identity === null) {
@@ -119,6 +123,7 @@ export function assembleRun(
     definitionSnapshot,
     tags,
     telemetry: readRunTelemetry(sidechainPath),
+    parentAgentId,
   };
 }
 

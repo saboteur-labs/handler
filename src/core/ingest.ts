@@ -13,9 +13,10 @@
 import { assembleRun, type Run } from './run';
 import type { AgentSource } from './sources/source';
 import { RunStore } from './store/run-store';
-import { discoverTranscripts } from './transcripts/discover';
+import { discoverSidechains, discoverTranscripts } from './transcripts/discover';
 import { extractRuns } from './transcripts/extract';
 import { readJsonl } from './transcripts/jsonl';
+import { parseSidechainParentAgentId } from './transcripts/sidechain';
 
 export interface IngestOptions {
   /** Registered agent sources to attribute against (e.g. `registry.list()`). */
@@ -29,9 +30,18 @@ export interface IngestOptions {
 /**
  * Ingest all user-authored subagent runs from the transcripts under
  * `projectsRoot`, persist them, and return the full stored run set.
+ *
+ * In addition to top-level parent transcripts, this also processes sidechain
+ * files (per-run sub-transcripts) to capture nested subagent runs — runs
+ * spawned by another subagent. The `parentAgentId` is extracted from the
+ * sidechain filename and recorded on each nested run, preserving the nesting
+ * relationship. Attribution uses the identical `resolveRunIdentity` logic as
+ * top-level runs; built-in agents and unregistered sources are dropped as
+ * normal; interrupted nested runs are kept-and-tagged with `'incomplete'`.
  */
 export function ingest(options: IngestOptions): Run[] {
   const store = new RunStore(options.storePath);
+
   for (const transcript of discoverTranscripts(options.projectsRoot)) {
     for (const raw of extractRuns(readJsonl(transcript))) {
       const run = assembleRun(raw, options.sources, transcript);
@@ -48,5 +58,19 @@ export function ingest(options: IngestOptions): Run[] {
       }
     }
   }
+
+  for (const sidechainPath of discoverSidechains(options.projectsRoot)) {
+    const parentAgentId = parseSidechainParentAgentId(sidechainPath);
+    for (const raw of extractRuns(readJsonl(sidechainPath))) {
+      const run = assembleRun(raw, options.sources, sidechainPath, parentAgentId);
+      if (run !== null) {
+        const existing = store.forRun(run.identityKey, run.runId);
+        if (existing === undefined || existing.source === 'hook') {
+          store.upsert({ ...run, source: 'transcript' });
+        }
+      }
+    }
+  }
+
   return store.list();
 }
