@@ -5,6 +5,7 @@ import type { AgentDetail, RunDetail } from '@/api/types';
 import { RunHistoryTable } from '@/components/RunHistoryTable';
 import { TierBSection } from '@/components/TierBSection';
 import { TierCSection } from '@/components/TierCSection';
+import { TranscriptPanel } from '@/components/TranscriptPanel';
 import { ConventionsSection } from '@/components/ConventionsSection';
 import { NoteSection } from '@/components/NoteSection';
 
@@ -98,6 +99,7 @@ export function AgentDetailPage(): JSX.Element {
                           <TierCSection tierC={run.tierC} />
                         </div>
                       </div>
+                      <TranscriptPanel runId={run.runId} />
                     </div>
                   ))}
               </div>
