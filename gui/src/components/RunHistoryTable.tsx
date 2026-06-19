@@ -47,12 +47,9 @@ export function RunHistoryTable({ runs }: RunHistoryTableProps): JSX.Element {
       <TableBody>
         {sorted.map((run) => {
           const runLabel =
-            run.timestamp !== undefined
-              ? new Date(run.timestamp).toLocaleString()
-              : 'Unknown';
+            run.timestamp !== undefined ? new Date(run.timestamp).toLocaleString() : 'Unknown';
 
-          const duration =
-            run.totalDurationMs !== undefined ? `${run.totalDurationMs}ms` : '—';
+          const duration = run.totalDurationMs !== undefined ? `${run.totalDurationMs}ms` : '—';
 
           const tokens = run.totalTokens !== undefined ? String(run.totalTokens) : '—';
 

@@ -6,13 +6,10 @@ interface TierCSectionProps {
 
 export function TierCSection({ tierC }: TierCSectionProps): JSX.Element {
   if (tierC === null) {
-    return (
-      <p className="text-fg-tertiary text-sm font-mono">Tier C: not computed</p>
-    );
+    return <p className="text-fg-tertiary text-sm font-mono">Tier C: not computed</p>;
   }
 
-  const labelClass =
-    tierC.label === 'pass' ? 'text-green-500' : 'text-brand-red';
+  const labelClass = tierC.label === 'pass' ? 'text-green-500' : 'text-brand-red';
 
   return (
     <div className="space-y-2">

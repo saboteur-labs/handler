@@ -45,17 +45,11 @@ export function AgentDetailPage(): JSX.Element {
         ← Back to roster
       </button>
 
-      {loading && (
-        <p className="text-fg-tertiary font-mono text-sm">Loading agent detail...</p>
-      )}
+      {loading && <p className="text-fg-tertiary font-mono text-sm">Loading agent detail...</p>}
 
-      {!loading && notFound && (
-        <p className="text-brand-red font-mono text-sm">Agent not found</p>
-      )}
+      {!loading && notFound && <p className="text-brand-red font-mono text-sm">Agent not found</p>}
 
-      {!loading && error !== null && (
-        <p className="text-brand-red font-mono text-sm">{error}</p>
-      )}
+      {!loading && error !== null && <p className="text-brand-red font-mono text-sm">{error}</p>}
 
       {!loading && agent !== null && (
         <main className="w-full max-w-5xl">

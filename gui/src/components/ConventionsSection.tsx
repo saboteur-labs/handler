@@ -33,7 +33,9 @@ export function ConventionsSection({ results }: ConventionsSectionProps): JSX.El
                 {check.passed ? '✓' : '✗'}
               </span>
               <span className="font-mono text-sm text-fg-secondary">{check.label}</span>
-              <span className={`font-mono text-xs uppercase tracking-label ${getPassClass(check.passed)}`}>
+              <span
+                className={`font-mono text-xs uppercase tracking-label ${getPassClass(check.passed)}`}
+              >
                 {check.passed ? 'Pass' : 'Fail'}
               </span>
             </div>

@@ -41,15 +41,9 @@ export function RosterPage(): JSX.Element {
         <h2 className="font-display font-bold text-fg-primary tracking-heading text-xl mb-6">
           Agents
         </h2>
-        {loading && (
-          <p className="text-fg-tertiary font-mono text-sm">Loading agents...</p>
-        )}
-        {!loading && error !== null && (
-          <p className="text-brand-red font-mono text-sm">{error}</p>
-        )}
-        {!loading && error === null && (
-          <RosterTable agents={agents} onSelect={handleSelect} />
-        )}
+        {loading && <p className="text-fg-tertiary font-mono text-sm">Loading agents...</p>}
+        {!loading && error !== null && <p className="text-brand-red font-mono text-sm">{error}</p>}
+        {!loading && error === null && <RosterTable agents={agents} onSelect={handleSelect} />}
       </main>
     </div>
   );

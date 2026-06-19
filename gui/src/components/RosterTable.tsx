@@ -22,9 +22,7 @@ function formatLastRun(lastRunDate: string | null): string {
 
 export function RosterTable({ agents, onSelect }: RosterTableProps): JSX.Element {
   if (agents.length === 0) {
-    return (
-      <p className="text-fg-tertiary font-mono text-sm py-8">No agents found.</p>
-    );
+    return <p className="text-fg-tertiary font-mono text-sm py-8">No agents found.</p>;
   }
 
   return (

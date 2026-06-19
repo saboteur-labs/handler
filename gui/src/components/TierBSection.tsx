@@ -12,9 +12,7 @@ function getFlagStatusClass(status: string): string {
 
 export function TierBSection({ tierB }: TierBSectionProps): JSX.Element {
   if (tierB === null) {
-    return (
-      <p className="text-fg-tertiary text-sm font-mono">Tier B: insufficient history</p>
-    );
+    return <p className="text-fg-tertiary text-sm font-mono">Tier B: insufficient history</p>;
   }
 
   return (
@@ -35,11 +33,7 @@ export function TierBSection({ tierB }: TierBSectionProps): JSX.Element {
       {tierB.contract !== undefined && (
         <p className="text-sm font-mono">
           <span className="text-fg-tertiary">contract: </span>
-          <span
-            className={
-              tierB.contract.status === 'pass' ? 'text-green-500' : 'text-brand-red'
-            }
-          >
+          <span className={tierB.contract.status === 'pass' ? 'text-green-500' : 'text-brand-red'}>
             {tierB.contract.status}
           </span>
         </p>
