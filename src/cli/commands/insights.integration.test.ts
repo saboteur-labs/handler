@@ -355,17 +355,20 @@ describe('handler insights: end-to-end integration', () => {
     expect(output).toMatch(/low confidence/i);
   });
 
-  it('shows zero-run-agent in the No history section', async () => {
+  it('shows zero-run-agent in the No history section (Task 6)', async () => {
     await registerAndClear();
     const output = await runInsights();
 
-    // zero-run-agent has a definition file but no runs — it is never returned
-    // by summarizeAgents (which only summarises agents with at least one run).
-    // The noHistory bucket only contains agents that the caller passes with
-    // zero runs in the runsByIdentityKey map. Since the CLI drives classifyRoster
-    // from summarizeAgents output, a definition-only agent does NOT appear.
-    // This test documents the current behaviour: zero-run-agent is absent.
-    expect(output).not.toContain('zero-run-agent');
+    // zero-run-agent has a definition file but no runs. The CLI enumerates
+    // registered-source definitions (`enumerateAgentDescriptors`) and merges
+    // them with the run-derived roster, so a defined-but-unrun agent reaches
+    // the classifier's no-history bucket (Req 7) instead of being dropped.
+    expect(output).toContain('No history');
+    expect(output).toContain('zero-run-agent');
+
+    // It must not be miscategorised as unused/failing/expensive.
+    const noHistoryIdx = output.indexOf('No history');
+    expect(output.slice(noHistoryIdx)).toContain('zero-run-agent');
   });
 
   it('does NOT label no-tierb-agent as expensive (Tier B data absent)', async () => {

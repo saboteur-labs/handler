@@ -55,7 +55,7 @@ The enabling query layer (Feature 1) and Tier B cost outliers (Feature 2) alread
 **Estimate:** 2
 **Notes:** Reuse transcript + Tier B fixtures from the Feature 2 ingestion and `show.tier-b.integration.test.ts` so run timestamps, scores, and outlier flags are realistic.
 
-### Task 6: Surface zero-run agents in the CLI no-history bucket (follow-up)
+### Task 6: Surface zero-run agents in the CLI no-history bucket (follow-up) ✓ COMPLETE
 
 **What:** Feed the classifier the full set of known agents (including definition-only agents with no stored runs) so the **no history** bucket (Req 7) is reachable from `handler insights`, not just from the classifier core.
 **Files:** `src/cli/commands/insights.ts`; a definition-enumeration helper in `src/core` (e.g. reuse/extend the `conventions` command's `.claude/agents` discovery); test additions in `src/cli/commands/insights.test.ts` / `insights.integration.test.ts`.
@@ -68,7 +68,7 @@ The enabling query layer (Feature 1) and Tier B cost outliers (Feature 2) alread
 
 ## Summary
 
-- **Total tasks:** 6 (5 complete; Task 6 is a follow-up)
+- **Total tasks:** 6 (all complete)
 - **Total estimated effort:** 16 points (13 implemented + 3 follow-up)
 - **Critical path:** Tasks 1 → 2 → 3 → 4 → 5 (fully sequential — the classifier is built up across 2→3, then consumed by the command). Task 6 branches off Task 4.
 - **Risks:** Task 3 — the Tier-B-absent "omit, don't report not-expensive" rule (Req 4) and the low-confidence-vs-no-history distinction (Reqs 6/7) are the easy-to-get-subtly-wrong parts; pin them with explicit boundary tests. Task 4 — keeping the command a pure formatter (no classification logic leaking out of core) per the architecture invariant. Task 6 — merging definition-derived and run-derived rosters without double-listing agents (dedupe on the identity tuple).

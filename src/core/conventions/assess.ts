@@ -12,13 +12,12 @@
  * thrown. When conventions are missing, the staleness state is returned with no
  * agents rather than failing — there is no rule set to check against.
  */
-import { readdirSync } from 'node:fs';
-
 import { isBuiltinAgent } from '../denylist';
 import type { AgentIdentity } from '../identity';
 import { agentIdentity } from '../identity';
 import { loadDefinitionSnapshot } from '../snapshot';
 import type { AgentSource } from '../sources/source';
+import { enumerateDefinitionNames } from '../sources/source';
 import type { ConventionSmell, ConventionViolation } from './checks';
 import { checkConventions } from './checks';
 import { loadConventionsWithDefault } from './conventions-store';
@@ -55,7 +54,7 @@ export function assessConventions(options: AssessOptions): ConventionsAssessment
   const { rules } = loaded.artifact;
   const agents: AgentAssessment[] = [];
   for (const source of options.sources) {
-    for (const name of enumerateDefinitions(source)) {
+    for (const name of enumerateDefinitionNames(source)) {
       if (isBuiltinAgent(name)) {
         continue;
       }
@@ -75,18 +74,4 @@ export function assessConventions(options: AssessOptions): ConventionsAssessment
     }
   }
   return { staleness, agents };
-}
-
-/** The `*.md` definition stems in a source's agents dir; empty when absent. */
-function enumerateDefinitions(source: AgentSource): string[] {
-  let entries: string[];
-  try {
-    entries = readdirSync(source.agentsDir);
-  } catch {
-    // Missing/unreadable agents dir is normal (source not yet populated).
-    return [];
-  }
-  return entries
-    .filter((entry) => entry.endsWith('.md'))
-    .map((entry) => entry.slice(0, -'.md'.length));
 }

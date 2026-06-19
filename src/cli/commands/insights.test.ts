@@ -143,8 +143,11 @@ describe('handler CLI: insights command', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  // 1. Empty roster (no sources or no runs) prints a clear "no agents" message
+  // 1. Empty roster (no definitions and no runs) prints a clear "no agents" message
   it('prints a clear message when no agents are found', async () => {
+    // Remove the seeded definition so the registered source is genuinely empty:
+    // no runs and no definitions to enumerate.
+    rmSync(join(repo, '.claude', 'agents', 'my-agent.md'));
     await registerSource();
     const code = await invoke();
     expect(code).toBe(0);
@@ -165,25 +168,18 @@ describe('handler CLI: insights command', () => {
     expect(report).toContain('my-agent');
   });
 
-  // 3. No-history section for zero-run agents (Req 7)
-  it('shows a No history section for agents with zero runs', async () => {
-    // Register the source (has my-agent definition) but no runs
+  // 3. No-history section for zero-run agents (Req 7, Task 6)
+  it('shows a No history section for agents with a definition but zero runs', async () => {
+    // The source has a my-agent definition (written in beforeEach) but no runs.
+    // The CLI enumerates registered-source definitions and merges them with the
+    // run-derived roster, so a defined-but-unrun agent reaches the no-history
+    // bucket instead of being dropped.
     await registerSource();
-    // Write a second agent definition with no runs to force a "no history" agent
-    // But summarizeAgents only knows about agents that have runs.
-    // So we need to check: if the source has a definition but no runs, is that shown?
-    // Based on the task spec (Req 7), zero-run agents go into "No history".
-    // The core classifyRoster gets agents from AgentDescriptor[] passed to it.
-    // In the CLI, we get agents from summarizeAgents(runs) which only returns agents
-    // with at least one run. So "No history" will only show if we also load from
-    // definition files. For now we test what the implementation actually does:
-    // the no-history section shows agents that appear in the descriptor list
-    // with zero runs. If the CLI only feeds summarizeAgents output, no-history
-    // will be empty. We test the actual behaviour.
     const code = await invoke();
     expect(code).toBe(0);
-    // With no runs, we get a "no agents" message (since summarizeAgents returns empty)
-    expect(out.join('\n')).toMatch(/no agents/i);
+    const report = out.join('\n');
+    expect(report).toMatch(/no history/i);
+    expect(report).toContain('my-agent');
   });
 
   // 4. Failing agents show in Failing section

@@ -10,9 +10,11 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 
 import {
+  type AgentDescriptor,
   type AgentInsight,
   classifyRoster,
   type ClassifierInput,
+  enumerateAgentDescriptors,
   ingest,
   type InsightsResult,
   type Run,
@@ -29,13 +31,16 @@ export function registerInsightsCommand(program: Command, ctx: CliContext): void
     .description('Show a categorized summary of all known agents (unused, failing, expensive)')
     .action(() => {
       const registry = new SourceRegistry(ctx.registryPath);
+      const sources = registry.list();
       const runs = ingest({
-        sources: registry.list(),
+        sources,
         projectsRoot: ctx.projectsRoot,
         storePath: ctx.storePath,
       });
 
-      const agents = summarizeAgents(runs);
+      // Merge run-derived agents with defined-but-unrun agents so the latter
+      // reach the classifier's no-history bucket (Req 7). Dedupe on identity.
+      const agents = mergeRoster(summarizeAgents(runs), enumerateAgentDescriptors(sources));
 
       if (agents.length === 0) {
         ctx.out('No agents found.');
@@ -68,6 +73,28 @@ export function registerInsightsCommand(program: Command, ctx: CliContext): void
 // ---------------------------------------------------------------------------
 // Data-assembly helpers (no classification logic)
 // ---------------------------------------------------------------------------
+
+/**
+ * Union of run-derived agents and defined-but-unrun agents, deduped on
+ * `identityKey`. Run-derived entries win (they carry a run count); definition
+ * descriptors only contribute agents not already present, so a defined agent
+ * with zero runs reaches the classifier and lands in its no-history bucket.
+ */
+function mergeRoster(
+  runDerived: readonly AgentDescriptor[],
+  defined: readonly AgentDescriptor[],
+): AgentDescriptor[] {
+  const byKey = new Map<string, AgentDescriptor>();
+  for (const agent of runDerived) {
+    byKey.set(agent.identityKey, agent);
+  }
+  for (const agent of defined) {
+    if (!byKey.has(agent.identityKey)) {
+      byKey.set(agent.identityKey, agent);
+    }
+  }
+  return [...byKey.values()];
+}
 
 /** Group all runs by agent identity key. */
 function buildRunsByIdentityKey(runs: readonly Run[]): ReadonlyMap<string, readonly Run[]> {
