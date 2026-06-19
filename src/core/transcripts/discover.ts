@@ -41,6 +41,42 @@ export function discoverTranscripts(projectsRoot: string = defaultProjectsRoot()
   return transcripts.sort();
 }
 
+/**
+ * Return the absolute paths of all sidechain `.jsonl` files found under any
+ * `subagents/` directory within `projectsRoot`, at arbitrary depth. A missing
+ * root, empty project dir, or project with no `subagents/` directory all yield
+ * `[]` without throwing. Results are sorted for deterministic output.
+ */
+export function discoverSidechains(projectsRoot: string = defaultProjectsRoot()): string[] {
+  const sidechains: string[] = [];
+  for (const project of readDirEntries(projectsRoot)) {
+    if (!project.isDirectory()) {
+      continue;
+    }
+    const projectDir = join(projectsRoot, project.name);
+    for (const session of readDirEntries(projectDir)) {
+      if (!session.isDirectory()) {
+        continue;
+      }
+      const subagentsDir = join(projectDir, session.name, 'subagents');
+      collectJsonlFiles(subagentsDir, sidechains);
+    }
+  }
+  return sidechains.sort();
+}
+
+/** Recursively collect all `.jsonl` files under `dir` into `acc`. */
+function collectJsonlFiles(dir: string, acc: string[]): void {
+  for (const entry of readDirEntries(dir)) {
+    const entryPath = join(dir, entry.name);
+    if (entry.isFile() && entry.name.endsWith('.jsonl')) {
+      acc.push(entryPath);
+    } else if (entry.isDirectory()) {
+      collectJsonlFiles(entryPath, acc);
+    }
+  }
+}
+
 /** List directory entries, treating a missing directory as empty. */
 function readDirEntries(dir: string): Dirent[] {
   try {

@@ -26,11 +26,13 @@ interface RunStoreFile {
  * they gained per-run `telemetry`). Bumped to 5 to cover: (4) the upsert-capable
  * RunStore baseline required by the SubagentStop hook, and (5) the `source` field
  * (`'hook' | 'transcript' | undefined`) added to `Run` in the hook ingestion task.
+ * Bumped to 6 to cover the `parentAgentId?: string` field added to `Run` for
+ * nested subagent capture (V1 Feature 7).
  * The bump is also the backfill trigger: a stale store is discarded and the next
  * ingest rebuilds it from transcripts with the new fields populated for every run
  * whose sub-transcript still exists.
  */
-export const RUN_STORE_VERSION = 5;
+export const RUN_STORE_VERSION = 6;
 
 /** Default run-store location: `~/.handler/runs.json`. */
 export function defaultRunStorePath(): string {

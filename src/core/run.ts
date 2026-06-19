@@ -67,6 +67,12 @@ export interface Run {
    * `undefined` for records written before this field was introduced.
    */
   readonly source?: 'hook' | 'transcript';
+  /**
+   * The `agentId` of the parent subagent when this run was spawned by another
+   * subagent (nested subagent capture). `undefined` for top-level runs or for
+   * records written before this field was introduced.
+   */
+  readonly parentAgentId?: string;
 }
 
 /**

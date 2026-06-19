@@ -104,6 +104,32 @@ describe('RunStore', () => {
     expect(store.list()).toHaveLength(1); // re-ingested under the current schema
   });
 
+  describe('parentAgentId field (v6 schema)', () => {
+    it('discards a store written under version 5 (old schema)', () => {
+      writeFileSync(file, JSON.stringify({ version: 5, runs: [run()] }), 'utf8');
+      expect(new RunStore(file).list()).toEqual([]);
+    });
+
+    it('loads a version-6 store with parentAgentId set', () => {
+      const runWithParent = run({ parentAgentId: 'parent-agent-42' });
+      writeFileSync(
+        file,
+        JSON.stringify({ version: RUN_STORE_VERSION, runs: [runWithParent] }),
+        'utf8',
+      );
+      const loaded = new RunStore(file).list();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0]?.parentAgentId).toBe('parent-agent-42');
+    });
+
+    it('loads a version-6 store with parentAgentId omitted, treating it as undefined', () => {
+      writeFileSync(file, JSON.stringify({ version: RUN_STORE_VERSION, runs: [run()] }), 'utf8');
+      const loaded = new RunStore(file).list();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0]?.parentAgentId).toBeUndefined();
+    });
+  });
+
   describe('upsert', () => {
     it('adds a run when the (identityKey, runId) is not yet present', () => {
       const store = new RunStore(file);
