@@ -102,3 +102,14 @@ export type { HookPayload } from './hook/payload';
 export { parseHookPayload } from './hook/payload';
 export type { HandleResult } from './hook/handler';
 export { handleSubagentStop } from './hook/handler';
+export type {
+  AgentDetail,
+  AgentListEntry,
+  ConventionsCheckResult,
+  GuiServerHandle,
+  RunDetail,
+  TierADetail,
+  TierBDetail,
+  TierCDetail,
+} from './gui/index';
+export { getAgentDetail, listAgents, startGuiServer } from './gui/index';
