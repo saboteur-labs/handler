@@ -82,3 +82,18 @@ export { ANCHOR_STORE_VERSION, AnchorStore, defaultAnchorsPath } from './store/a
 export { buildJudgePrompt } from './scoring/tier-c-prompt';
 export type { JudgeClient, JudgeResponse } from './scoring/judge-client';
 export { DefaultJudgeClient } from './scoring/judge-client';
+export {
+  DEFAULT_INSIGHTS_FAIL_SCORE,
+  DEFAULT_INSIGHTS_RECENCY_DAYS,
+  getInsightsFailScore,
+  getInsightsRecencyDays,
+} from './insights/config';
+export type {
+  AgentDescriptor,
+  AgentInsight,
+  ClassifierInput,
+  ClassifierOptions,
+  InsightCategory,
+  InsightsResult,
+} from './insights/classify';
+export { classifyRoster } from './insights/classify';
