@@ -16,6 +16,12 @@ It does this in two complementary ways:
   a run actually fulfilled the agent's own stated role, with the judge's reasoning
   attached. It is segregated from the deterministic score and never blended into it
   (see [Judged quality (Tier C)](#judged-quality-tier-c)).
+- **Run inspection** — read the full turn-by-turn transcript of any run (its task
+  prompt, outputs, and every tool call and result), triage your whole roster at a
+  glance with `handler insights`, and browse it all visually with `handler gui`.
+
+handler also captures **nested** runs — subagents spawned by other subagents — attributing
+each to its own agent and annotating it `spawned by <agent>`.
 
 Everything runs locally by default. The only network calls handler can make are both
 opt-in: the conventions sync (see [Keeping conventions current](#keeping-conventions-current))
@@ -61,6 +67,11 @@ handler conventions
 handler list
 handler show code-reviewer
 handler trend code-reviewer        # how that agent's scores move over time
+handler transcript code-reviewer --latest   # what the last run actually did
+
+# 4. Triage the whole roster, or browse everything in a GUI
+handler insights
+handler gui
 ```
 
 ## Commands
@@ -113,7 +124,10 @@ List your agents and how many runs each has (built from ingested transcripts).
 
 ### `handler show <agent>`
 
-Show an agent's run history and metrics, including the per-run deterministic score.
+Show an agent's run history and metrics, including the per-run deterministic
+score, the Tier B reference-relative section, any Tier C judged-quality
+annotation, the conventions result, and the agent's note. Runs that were spawned
+by another subagent are annotated `spawned by <agent>`.
 
 ### `handler trend <agent>`
 
@@ -140,7 +154,59 @@ Flags:
   (the date filter applies first).
 
 A single-run agent renders its one row without implying a trend; an agent with
-no runs prints a "no runs" message.
+no runs prints a "no runs" message. Per-run rows for nested runs carry the same
+`spawned by <agent>` annotation as `handler show`.
+
+### `handler transcript <agent> <runId>`
+
+Render the full turn-by-turn transcript of a single run: the task prompt it
+received, each assistant turn, and every tool call with its input and result.
+It reads straight from the run's locally stored sub-transcript — no network. A
+run with no recorded sub-transcript (e.g. an interrupted run) can't be shown and
+the command exits non-zero with an explanation.
+
+Flags:
+
+- `--latest` — use the agent's most-recent run, so you needn't copy a run id
+  from `handler show` first (`handler transcript code-reviewer --latest`).
+- `--full` — disable the default truncation of large tool outputs (each tool
+  result is otherwise capped at ~2 KB).
+
+The same per-run transcript is browsable in the GUI (`handler gui`).
+
+### `handler note set|show|edit <agent>`
+
+Attach a freeform note to an agent, keyed on the agent's identity so the note
+survives renames, edits, and deletions.
+
+- `handler note set <agent>` — set the note from `--body` or piped stdin.
+- `handler note show <agent>` — print the note.
+- `handler note edit <agent>` — edit the note in `$EDITOR`.
+
+The note also renders inline in `handler show`.
+
+### `handler diff <agent>`
+
+Show the metric impact of each change to an agent's definition — how the agent's
+scores and metrics moved across successive definition snapshots.
+
+### `handler insights`
+
+Print a categorized summary across all known agents so you can triage your
+roster at a glance — which agents are **unused**, **failing**, or **expensive**.
+When an agent's history is too thin to judge, it's labeled low-confidence rather
+than flagged misleadingly.
+
+### `handler gui`
+
+Launch a local browser GUI to browse your roster, run history, per-run scores,
+conventions results, notes, and per-run transcripts visually instead of through
+the CLI. It starts a local server — all logic stays in handler's core; the
+browser only renders — and prints the URL to open.
+
+Flags:
+
+- `-p, --port <port>` — port to listen on (default `4242`).
 
 ### `handler judge <agent> <runId>`
 
@@ -215,7 +281,9 @@ variable — handy for testing or non-standard setups:
 | `HANDLER_REGISTRY`    | Source registry file (default `~/.handler/sources.json`).                       |
 | `HANDLER_STORE`       | Run store (default `~/.handler/runs.json`).                                     |
 | `HANDLER_SCORES`      | Score store (default `~/.handler/scores.json`).                                 |
+| `HANDLER_TIERB`       | Tier B reference-relative store (default `~/.handler/tier-b.json`).             |
 | `HANDLER_TIERC`       | Tier C annotation store (default `~/.handler/tier-c.json`).                     |
+| `HANDLER_NOTES`       | Per-agent note store (default `~/.handler/notes.json`).                         |
 | `HANDLER_CONVENTIONS` | Conventions artifact (default `~/.handler/conventions.json`).                   |
 | `HANDLER_PROJECTS`    | Claude Code transcripts root (default `~/.claude/projects`).                    |
 | `ANTHROPIC_API_KEY`   | API key for the opt-in Tier C judge (no default; required for `handler judge`). |
@@ -228,6 +296,10 @@ transcripts under `~/.claude/projects/`, with each subagent run isolated to its 
 `subagents/agent-<id>.jsonl` and attributed deterministically via the parent session's
 `Task` result. Agent identity is the tuple `(source-type, normalized-source-path, name)`,
 and each run snapshots the definition's _content_ so history survives renames and edits.
+Nested runs — subagents a subagent spawns — are discovered by walking those sidechain
+files recursively; each nested run attributes to its own agent (no roll-ups) and records
+a pointer to its parent so `show`/`trend` can annotate it `spawned by <agent>`. The
+`handler transcript` view reads the same per-run sidechain file directly.
 
 ## Development
 
