@@ -24,6 +24,9 @@ import {
   ScoreStore,
   SourceRegistry,
   summarizeAgents,
+  TIER_C_VERSION,
+  type TierCResult,
+  TierCStore,
   tierBForRun,
   type TierBResult,
   TierBStore,
@@ -59,6 +62,7 @@ export function registerShowCommand(program: Command, ctx: CliContext): void {
         runs,
         new ScoreStore(ctx.scoreStorePath),
         new TierBStore(ctx.tierBStorePath),
+        new TierCStore(ctx.tierCStorePath),
       );
     });
 }
@@ -76,6 +80,7 @@ function printAgent(
   allRuns: readonly Run[],
   scoreStore: ScoreStore,
   tierBStore: TierBStore,
+  tierCStore: TierCStore,
 ): void {
   const runs = allRuns.filter((run) => run.identityKey === agent.identityKey);
   const metrics = aggregateMetrics(runs);
@@ -123,6 +128,10 @@ function printAgent(
     ctx.out(`    ${formatRun(run)}`);
     ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
     ctx.out(`      ${formatTierB(tierBForRun(run, runs, tierBStore))}`);
+    const tierCResult = tierCStore.get(run.identityKey, run.runId, TIER_C_VERSION);
+    if (tierCResult !== undefined) {
+      ctx.out(`      ${formatTierC(tierCResult)}`);
+    }
     const telemetry = run.telemetry === undefined ? undefined : formatTelemetry(run.telemetry);
     if (telemetry !== undefined) {
       ctx.out(`      ${chalk.dim(telemetry)}`);
@@ -234,6 +243,13 @@ function formatTierB(result: TierBResult): string {
   }
 
   return `${label} ${[...flagParts, contractStr].join(' · ')}`;
+}
+
+/** One-line Tier C (judged quality) section for a run that has an annotation. */
+function formatTierC(result: TierCResult): string {
+  const label = chalk.magenta('Tier C (judged quality):');
+  const verdict = result.label === 'pass' ? chalk.green(result.label) : chalk.red(result.label);
+  return `${label} ${verdict} — ${result.reasoning}`;
 }
 
 function formatRun(run: Run): string {

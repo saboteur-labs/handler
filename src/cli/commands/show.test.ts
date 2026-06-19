@@ -3,7 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { TIER_C_VERSION, TierCStore } from '../../core/index';
 import { run } from '../index';
+
+/** Build the identityKey for a repo-registered agent (mirrors `identityKey` in core). */
+function repoIdentityKey(sourcePath: string, name: string): string {
+  return JSON.stringify(['repo', sourcePath, name]);
+}
 
 describe('handler CLI: show command (Req 11)', () => {
   let dir: string;
@@ -367,6 +373,108 @@ describe('handler CLI: show command (Req 11)', () => {
       expect(report).toMatch(/\b(PASS|WARN|FAIL)\b/);
       // Tier B section is also present
       expect(report).toMatch(/Tier B:/);
+    });
+  });
+
+  describe('Tier C section in show output', () => {
+    let tierCStorePath: string;
+
+    const invokeWithTierC = (args: string[]): Promise<number> =>
+      run(args, {
+        registryPath,
+        storePath,
+        projectsRoot,
+        scoreStorePath: join(dir, 'scores.json'),
+        noteStorePath: join(dir, 'notes.json'),
+        tierBStorePath: join(dir, 'tier-b.json'),
+        tierCStorePath,
+        out: (line) => out.push(line),
+        readStdin: () => Promise.resolve(''),
+        runEditor: () => 0,
+      });
+
+    beforeEach(() => {
+      tierCStorePath = join(dir, 'tier-c.json');
+    });
+
+    it('shows the Tier C label and reasoning when an annotation exists for a run', async () => {
+      await invokeWithTierC(['source', 'register', repo]);
+      out.length = 0;
+
+      // Seed a Tier C annotation for agent-1 (completed run).
+      // We need to determine the identityKey for the reviewer agent registered under `repo`.
+      // The identity key format is `repo::<sourcePath>::<name>` — use the store API to seed it.
+      // First, get the identityKey by running show and inspecting ingest output.
+      // We seed using TierCStore directly with the known identity key pattern.
+      const tierCStore = new TierCStore(tierCStorePath);
+      // The identity key for a repo-registered agent is JSON.stringify(['repo', sourcePath, name]).
+      // We seed for the run ID `agent-1` that we know exists from beforeEach.
+      tierCStore.add({
+        identityKey: repoIdentityKey(repo, 'reviewer'),
+        runId: 'agent-1',
+        result: {
+          label: 'pass',
+          reasoning: 'The agent performed well and followed all instructions.',
+          rubricVersion: TIER_C_VERSION,
+          createdAt: '2026-06-17T12:00:00.000Z',
+        },
+      });
+
+      expect(await invokeWithTierC(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+
+      // Tier C section must appear with a clear label
+      expect(report).toMatch(/Tier C/i);
+      // The label must be present
+      expect(report).toMatch(/pass/i);
+      // The reasoning must be present
+      expect(report).toContain('The agent performed well and followed all instructions.');
+    });
+
+    it('omits the Tier C section entirely when no annotation exists for a run', async () => {
+      await invokeWithTierC(['source', 'register', repo]);
+      out.length = 0;
+
+      // No Tier C annotation seeded — store is empty.
+      expect(await invokeWithTierC(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+
+      // No Tier C section must appear
+      expect(report).not.toMatch(/Tier C/i);
+
+      // Tier A score line must still be present
+      expect(report).toMatch(/score:/);
+      expect(report).toMatch(/\b(PASS|WARN|FAIL)\b/);
+    });
+
+    it('renders the Tier C section with a distinct label separate from Tier A and Tier B', async () => {
+      await invokeWithTierC(['source', 'register', repo]);
+      out.length = 0;
+
+      const tierCStore = new TierCStore(tierCStorePath);
+      tierCStore.add({
+        identityKey: repoIdentityKey(repo, 'reviewer'),
+        runId: 'agent-1',
+        result: {
+          label: 'fail',
+          reasoning: 'The agent exceeded scope and made unauthorized edits.',
+          rubricVersion: TIER_C_VERSION,
+          createdAt: '2026-06-17T12:00:00.000Z',
+        },
+      });
+
+      expect(await invokeWithTierC(['show', 'reviewer'])).toBe(0);
+      const report = out.join('\n');
+
+      // Tier C section must be labeled differently from Tier A and Tier B
+      expect(report).toMatch(/Tier C/);
+      // Tier A is present (score line)
+      expect(report).toMatch(/score:/);
+      // Tier B section label is distinct from Tier C
+      expect(report).toMatch(/Tier B:/);
+      // Tier C section carries the fail label
+      expect(report).toMatch(/fail/);
+      expect(report).toContain('The agent exceeded scope and made unauthorized edits.');
     });
   });
 });
