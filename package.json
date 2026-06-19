@@ -24,7 +24,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown --config-loader native",
+    "build": "tsdown --config-loader native && cd gui && npm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

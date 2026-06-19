@@ -27,9 +27,9 @@ export function registerGuiCommand(program: Command, ctx: CliContext): void {
       const port = parseInt(options.port, 10);
 
       // Resolve the GUI assets directory relative to this file's location.
-      // In the built bundle: dist/cli/commands/gui.js → ../../gui = dist/gui/
+      // In the built bundle: dist/cli/index.js → ../gui = dist/gui/
       const currentDir = dirname(fileURLToPath(import.meta.url));
-      const assetsDir = resolve(currentDir, '../../gui');
+      const assetsDir = resolve(currentDir, '../gui');
 
       if (!existsSync(assetsDir)) {
         ctx.out('GUI assets not built — run `npm run build:gui` first');
