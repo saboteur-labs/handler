@@ -58,3 +58,19 @@ export { buildTrendSeries } from './trend/series';
 export type { BucketGranularity, BucketRow } from './trend/bucket';
 export { bucket } from './trend/bucket';
 export { filterLast, filterSince } from './trend/window';
+export type { TierBContractResult, TierBFlag, TierBResult, TierBStatus } from './scoring/tier-b';
+export {
+  DEFAULT_MIN_RUNS,
+  DEFAULT_OUTLIER_FACTOR,
+  getMinRuns,
+  getOutlierFactor,
+  tierBForRun,
+  TIER_B_VERSION,
+} from './scoring/tier-b';
+export type { TierBAnnotation } from './store/tier-b-store';
+export { defaultTierBStorePath, TierBStore, TIER_B_STORE_VERSION } from './store/tier-b-store';
+export type { TierBReference, TierBReferenceResult } from './scoring/tier-b-reference';
+export { computeReference } from './scoring/tier-b-reference';
+export { computeOutlierFlags } from './scoring/tier-b-outliers';
+export type { DetectedContract } from './scoring/tier-b-contract';
+export { checkContract, detectContract, extractRunOutput } from './scoring/tier-b-contract';

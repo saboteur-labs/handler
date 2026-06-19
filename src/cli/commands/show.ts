@@ -24,6 +24,9 @@ import {
   ScoreStore,
   SourceRegistry,
   summarizeAgents,
+  tierBForRun,
+  type TierBResult,
+  TierBStore,
 } from '../../core/index';
 import { signed, signedPercent } from '../format';
 import type { CliContext } from './source';
@@ -50,7 +53,13 @@ export function registerShowCommand(program: Command, ctx: CliContext): void {
         printAmbiguous(ctx, name, matches);
         return;
       }
-      printAgent(ctx, agent, runs, new ScoreStore(ctx.scoreStorePath));
+      printAgent(
+        ctx,
+        agent,
+        runs,
+        new ScoreStore(ctx.scoreStorePath),
+        new TierBStore(ctx.tierBStorePath),
+      );
     });
 }
 
@@ -66,6 +75,7 @@ function printAgent(
   agent: AgentSummary,
   allRuns: readonly Run[],
   scoreStore: ScoreStore,
+  tierBStore: TierBStore,
 ): void {
   const runs = allRuns.filter((run) => run.identityKey === agent.identityKey);
   const metrics = aggregateMetrics(runs);
@@ -112,6 +122,7 @@ function printAgent(
     }
     ctx.out(`    ${formatRun(run)}`);
     ctx.out(`      ${formatScore(scoreRun(run, scoreStore))}`);
+    ctx.out(`      ${formatTierB(tierBForRun(run, runs, tierBStore))}`);
     const telemetry = run.telemetry === undefined ? undefined : formatTelemetry(run.telemetry);
     if (telemetry !== undefined) {
       ctx.out(`      ${chalk.dim(telemetry)}`);
@@ -190,6 +201,39 @@ function formatScore(score: Score | null): string {
   const detail =
     flagged.length > 0 ? ` — ${flagged.map((c) => `${c.label}: ${c.detail}`).join('; ')}` : '';
   return `score: ${band} ${score.composite}${detail}`;
+}
+
+/** One-line Tier B reference-relative score section. */
+function formatTierB(result: TierBResult): string {
+  const label = chalk.cyan('Tier B:');
+  if (result.status === 'insufficient-history') {
+    return `${label} ${chalk.dim('insufficient history')}`;
+  }
+
+  const flags = result.flags ?? [];
+  const flagParts = flags.map((flag) => {
+    let statusStr: string;
+    if (flag.status === 'outlier') {
+      statusStr = chalk.yellow('outlier');
+    } else if (flag.status === 'within') {
+      statusStr = 'within';
+    } else {
+      statusStr = chalk.dim('n/a');
+    }
+    return `${flag.dimension} ${statusStr}`;
+  });
+
+  let contractStr: string;
+  const contract = result.contract;
+  if (contract === undefined || contract.status === 'not-applicable') {
+    contractStr = `contract ${chalk.dim('n/a')}`;
+  } else if (contract.status === 'pass') {
+    contractStr = `contract ${chalk.green('pass')}`;
+  } else {
+    contractStr = `contract ${chalk.red('fail')}`;
+  }
+
+  return `${label} ${[...flagParts, contractStr].join(' · ')}`;
 }
 
 function formatRun(run: Run): string {
