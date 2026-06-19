@@ -9,6 +9,7 @@
  * identity (Req 8) and the value the cwd-nearest-ancestor rule (Task 6)
  * compares against.
  */
+import { readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -38,4 +39,21 @@ export function userSource(home: string = homedir()): AgentSource {
 export function repoSource(repoRoot: string): AgentSource {
   const root = normalizePath(repoRoot);
   return { type: 'repo', root, agentsDir: agentsDirFor(root) };
+}
+
+/**
+ * The `*.md` definition stems in a source's agents dir; empty when the dir is
+ * absent or unreadable (a source that has not been populated yet). Includes
+ * builtin/plugin names — callers apply the user-authored-only denylist.
+ */
+export function enumerateDefinitionNames(source: AgentSource): string[] {
+  let entries: string[];
+  try {
+    entries = readdirSync(source.agentsDir);
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => entry.endsWith('.md'))
+    .map((entry) => entry.slice(0, -'.md'.length));
 }
