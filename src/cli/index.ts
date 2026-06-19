@@ -15,6 +15,7 @@ import type { JudgeClient } from '../core/index';
 import { VERSION } from '../core/index';
 import { registerAnchorCommand } from './commands/anchor';
 import { registerConventionsCommand } from './commands/conventions';
+import { registerGuiCommand } from './commands/gui';
 import { registerDiffCommand } from './commands/diff';
 import { registerHookCommand } from './commands/hook';
 import { registerInsightsCommand } from './commands/insights';
@@ -125,6 +126,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerJudgeCommand(program, ctx);
   registerInsightsCommand(program, ctx);
   registerHookCommand(program, ctx);
+  registerGuiCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });
