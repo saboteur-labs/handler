@@ -98,6 +98,7 @@ export type {
 } from './insights/classify';
 export { classifyRoster } from './insights/classify';
 export { enumerateAgentDescriptors } from './insights/roster';
+export { resolveParentAnnotation } from './lineage';
 export type { HookPayload } from './hook/payload';
 export { parseHookPayload } from './hook/payload';
 export type { HandleResult } from './hook/handler';
