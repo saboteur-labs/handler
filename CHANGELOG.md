@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.5](https://github.com/saboteur-labs/handler/compare/handler-v0.1.4...handler-v0.1.5) (2026-06-19)
+
+
+### Features
+
+* **cli:** add handler gui command ([006212b](https://github.com/saboteur-labs/handler/commit/006212b8ec90feecf4bca8429c68fd3eec09391f))
+* **gui:** add agent detail page with run history and Tier A scores ([fc29448](https://github.com/saboteur-labs/handler/commit/fc294489bef5ccfcda6e8ccdd1f6df27251f6b6c))
+* **gui:** add conventions and note sections to detail page ([5f66036](https://github.com/saboteur-labs/handler/commit/5f66036074dad169d688238530370e495feb987a))
+* **gui:** add core API module for roster and agent detail ([fd164e9](https://github.com/saboteur-labs/handler/commit/fd164e968dffbdeb4df4c5b5ba59f31350386100))
+* **gui:** add roster page and table ([9595759](https://github.com/saboteur-labs/handler/commit/9595759cd634c89685b7071f50eea19a703d5d2c))
+* **gui:** add thin HTTP server transport over core API ([14c7c1b](https://github.com/saboteur-labs/handler/commit/14c7c1bafc6c05a646e1e84db9e415274eb72723))
+* **gui:** add typed API client module ([a8507d0](https://github.com/saboteur-labs/handler/commit/a8507d040b9b747fb45d5cafa87de0e32b615570))
+* **gui:** scaffold Vite/React/Tailwind/shadcn SPA ([368c4eb](https://github.com/saboteur-labs/handler/commit/368c4eb66b363b84fbbf8ffa28f66c49346c8b46))
+* V1 Feature 6 — Lightweight GUI ([868fd1b](https://github.com/saboteur-labs/handler/commit/868fd1bcf1ecd3fca848af3b3fb0e8327fde6f95))
+
+
+### Bug Fixes
+
+* **build:** install gui deps before building the SPA ([4d46974](https://github.com/saboteur-labs/handler/commit/4d469745f233be2e4ce6b16787e0833396fc1048))
+
 ## [0.1.4](https://github.com/saboteur-labs/handler/compare/handler-v0.1.3...handler-v0.1.4) (2026-06-19)
 
 
