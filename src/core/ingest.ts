@@ -36,7 +36,15 @@ export function ingest(options: IngestOptions): Run[] {
     for (const raw of extractRuns(readJsonl(transcript))) {
       const run = assembleRun(raw, options.sources, transcript);
       if (run !== null) {
-        store.add(run);
+        // Transcript is authoritative, but the first transcript snapshot of a
+        // run wins: enrich a real-time `hook` stub, yet never overwrite an
+        // existing transcript record — re-ingesting after a definition edit
+        // must preserve each run's original definition snapshot so history
+        // survives renames/edits (mirrors the old `add` dedup-no-op).
+        const existing = store.forRun(run.identityKey, run.runId);
+        if (existing === undefined || existing.source === 'hook') {
+          store.upsert({ ...run, source: 'transcript' });
+        }
       }
     }
   }

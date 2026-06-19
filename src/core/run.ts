@@ -59,6 +59,14 @@ export interface Run {
   readonly tags: readonly RunTag[];
   /** Per-run telemetry from the sub-transcript; absent when not locatable. */
   readonly telemetry?: RunTelemetrySummary;
+  /**
+   * How this record was last written. `'transcript'` means the full attributed
+   * record was assembled from a parsed JSONL transcript (authoritative);
+   * `'hook'` means it was written as a real-time stub by the SubagentStop hook
+   * handler (may be superseded by a subsequent transcript ingest).
+   * `undefined` for records written before this field was introduced.
+   */
+  readonly source?: 'hook' | 'transcript';
 }
 
 /**

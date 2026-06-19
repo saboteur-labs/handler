@@ -86,4 +86,18 @@ describe('ingest', () => {
   it('returns an empty set when no sources are registered', () => {
     expect(ingest({ sources: [], projectsRoot, storePath })).toEqual([]);
   });
+
+  it('preserves the original definition snapshot when re-ingesting after a definition edit', () => {
+    const sources = [repoSource(repoRoot)];
+    const first = ingest({ sources, projectsRoot, storePath });
+    expect(first[0]?.definitionSnapshot).toBe('definition body');
+
+    // The author edits the definition; the same run is re-ingested.
+    writeFileSync(join(repoRoot, '.claude', 'agents', 'reviewer.md'), 'revised body', 'utf8');
+    const second = ingest({ sources, projectsRoot, storePath });
+
+    expect(second).toHaveLength(1);
+    // History survives edits: the run keeps the snapshot captured at first ingest.
+    expect(second[0]?.definitionSnapshot).toBe('definition body');
+  });
 });

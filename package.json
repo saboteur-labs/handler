@@ -9,7 +9,8 @@
     "node": ">=20"
   },
   "bin": {
-    "handler": "./dist/cli/index.js"
+    "handler": "./dist/cli/index.js",
+    "handler-hook": "./dist/cli/hook-handler.js"
   },
   "main": "./dist/core/index.js",
   "types": "./dist/core/index.d.ts",

@@ -16,6 +16,7 @@ import { VERSION } from '../core/index';
 import { registerAnchorCommand } from './commands/anchor';
 import { registerConventionsCommand } from './commands/conventions';
 import { registerDiffCommand } from './commands/diff';
+import { registerHookCommand } from './commands/hook';
 import { registerInsightsCommand } from './commands/insights';
 import { registerJudgeCommand } from './commands/judge';
 import { registerListCommand } from './commands/list';
@@ -123,6 +124,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerAnchorCommand(program, ctx);
   registerJudgeCommand(program, ctx);
   registerInsightsCommand(program, ctx);
+  registerHookCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });
