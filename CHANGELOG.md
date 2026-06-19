@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.6](https://github.com/saboteur-labs/handler/compare/handler-v0.1.5...handler-v0.1.6) (2026-06-19)
+
+
+### Features
+
+* **cli:** add spawned-by annotation to show and trend commands ([15017b2](https://github.com/saboteur-labs/handler/commit/15017b22f27c09f3483384b5aca5d8409bbb03d1))
+* **cli:** add transcript command with --latest and --full flags (Reqs 48-52) ([b0d55c7](https://github.com/saboteur-labs/handler/commit/b0d55c7b485b7961ff11c95b3a64d71b0fb0e913))
+* **core:** add getRunTranscript GUI core function (Req 53) ([99ab166](https://github.com/saboteur-labs/handler/commit/99ab1664479f53d92f66f56fea05a5bec17053bc))
+* **core:** add resolveParentAnnotation for spawned-by lineage display ([5c6d1f1](https://github.com/saboteur-labs/handler/commit/5c6d1f1b0c18b592e52ccff6fb78303fce1cdab7))
+* **core:** add RunTranscript model and readTranscript function (Reqs 45-47) ([23eafaa](https://github.com/saboteur-labs/handler/commit/23eafaae81ed03f06799a84ee0370628f317d9c0))
+* **gui:** add fetchRunTranscript API client and RunTranscriptData types (Req 53) ([f206b6c](https://github.com/saboteur-labs/handler/commit/f206b6c2a95b0f9f72e0a7adc1a5b526f71f9617))
+* **gui:** add TranscriptPanel component with lazy loading (Req 53) ([8bbb917](https://github.com/saboteur-labs/handler/commit/8bbb917d8f5f17c1bbc03566ffbc0fe53d474e63))
+* **ingest:** guard against duplicate agentId ingestion within a single call ([6d6ba32](https://github.com/saboteur-labs/handler/commit/6d6ba32237c48aff12d5ccf5cd721244744eb8d8))
+* **ingest:** ingest nested sidechain files with flat attribution and parentAgentId ([8589fa9](https://github.com/saboteur-labs/handler/commit/8589fa93875be67d6f208641edbf9656658f2740))
+* **server:** add GET /api/runs/:runId/transcript endpoint (Req 53) ([2287725](https://github.com/saboteur-labs/handler/commit/228772543398160f985654b538116f8294798dd0))
+* **transcripts:** extend discovery for nested sidechains and add parentAgentId schema ([bd6daac](https://github.com/saboteur-labs/handler/commit/bd6daac290f4a05bf7cd0024f95d27ac4c4fa4f1))
+* V1 Feature 8 — run transcript view ([a923e1c](https://github.com/saboteur-labs/handler/commit/a923e1c7ea7c0c941e2b930bc5c004e6d357f6a3))
+
+
+### Bug Fixes
+
+* **ingest:** locate nested run sub-transcripts as siblings, self-heal stale locators ([8b989b7](https://github.com/saboteur-labs/handler/commit/8b989b7dc9814498c3adca7c8a9661b58a5a3d07))
+* **transcript:** extract task prompt from string message content ([0e597e6](https://github.com/saboteur-labs/handler/commit/0e597e6be8ceb31dd57a4598977ab60748ed8515))
+
 ## [0.1.5](https://github.com/saboteur-labs/handler/compare/handler-v0.1.4...handler-v0.1.5) (2026-06-19)
 
 
