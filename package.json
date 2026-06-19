@@ -31,7 +31,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:gui": "cd gui && npm run build"
   },
   "dependencies": {
     "chalk": "^5.4.1",
