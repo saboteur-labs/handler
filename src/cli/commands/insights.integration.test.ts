@@ -74,6 +74,15 @@ describe('handler insights: end-to-end integration', () => {
     writeFileSync(join(projectDir, fileName), line, 'utf8');
   }
 
+  // A run `i` of 1..5 that is `6 - i` days before now — so run 5 is the most
+  // recent (1 day ago) and all five sit safely inside the 30-day recency window
+  // regardless of the wall-clock date the suite runs on. Relative timestamps
+  // keep the "recent" scenarios from ageing out of the window over time.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  function recentTimestamp(i: number): string {
+    return new Date(Date.now() - (6 - i) * DAY_MS).toISOString();
+  }
+
   // ---------------------------------------------------------------------------
   // Store seeding helpers (reused from insights.test.ts pattern)
   // ---------------------------------------------------------------------------
@@ -224,7 +233,7 @@ describe('handler insights: end-to-end integration', () => {
     // Scenario 2: failing-agent — 5 recent runs; one will have a failing score
     // -------------------------------------------------------------------------
     for (let i = 1; i <= 5; i++) {
-      const ts = `2026-06-${String(i).padStart(2, '0')}T10:00:00.000Z`;
+      const ts = recentTimestamp(i);
       writeTranscript(
         `failing-${i}.jsonl`,
         completedEntry({
@@ -241,7 +250,7 @@ describe('handler insights: end-to-end integration', () => {
     // Scenario 3: expensive-agent — 5 recent runs; one will have a Tier B outlier
     // -------------------------------------------------------------------------
     for (let i = 1; i <= 5; i++) {
-      const ts = `2026-06-${String(i).padStart(2, '0')}T11:00:00.000Z`;
+      const ts = recentTimestamp(i);
       writeTranscript(
         `expensive-${i}.jsonl`,
         completedEntry({
@@ -278,7 +287,7 @@ describe('handler insights: end-to-end integration', () => {
     // Scenario 6: no-tierb-agent — 5 recent runs, no Tier B annotation seeded
     // -------------------------------------------------------------------------
     for (let i = 1; i <= 5; i++) {
-      const ts = `2026-06-${String(i).padStart(2, '0')}T12:00:00.000Z`;
+      const ts = recentTimestamp(i);
       writeTranscript(
         `notierb-${i}.jsonl`,
         completedEntry({
