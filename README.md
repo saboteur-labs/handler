@@ -208,6 +208,22 @@ Flags:
 
 - `-p, --port <port>` — port to listen on (default `4242`).
 
+### `handler hook enable|disable`
+
+Print the Claude Code configuration fragment for handler's optional real-time
+capture. handler observes runs by parsing transcripts, which needs no setup; the
+`SubagentStop` hook is a complementary path that records each run the moment it
+finishes. It's never required — transcript parsing stays the source of truth,
+and everything works with the hook disabled.
+
+- `handler hook enable` — print the `SubagentStop` fragment to merge into your
+  Claude Code `settings.json` (user-level `~/.claude/settings.json` or per-repo
+  `<repo>/.claude/settings.json`), registering the `handler-hook` binary.
+- `handler hook disable` — print the entry to remove to turn real-time capture
+  back off.
+
+Both commands only print text — they never edit your settings for you.
+
 ### `handler judge <agent> <runId>`
 
 Invoke the Tier C LLM judge on a single run (opt-in). It prints a pre-flight
