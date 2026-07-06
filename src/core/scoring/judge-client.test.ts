@@ -193,7 +193,7 @@ describe('JudgeClient failure contract', () => {
 describe('DefaultJudgeClient configuration', () => {
   it('constructs with an api key and default model', () => {
     const client = new DefaultJudgeClient({ apiKey: 'my-key' });
-    expect(client.model).toBe('claude-sonnet-4-6');
+    expect(client.model).toBe('claude-sonnet-5');
   });
 
   it('accepts a custom model name', () => {

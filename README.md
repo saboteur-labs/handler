@@ -272,7 +272,7 @@ Three properties are guaranteed:
 
 You supply your own model access — handler structures the call and stores the
 result, but does not manage or host a model. Set `ANTHROPIC_API_KEY` in your
-environment; the judge defaults to `claude-sonnet-4-6`.
+environment; the judge defaults to `claude-sonnet-5`.
 
 ## Keeping conventions current
 

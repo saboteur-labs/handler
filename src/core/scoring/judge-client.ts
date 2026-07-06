@@ -8,7 +8,7 @@
  * `DefaultJudgeClient` is the production implementation. It calls the Claude
  * API via `fetch` (Node ≥18 native) using a user-supplied API key from the
  * `ANTHROPIC_API_KEY` environment variable or an explicit constructor option.
- * The model defaults to `claude-sonnet-4-6` but is configurable.
+ * The model defaults to `claude-sonnet-5` but is configurable.
  *
  * **Failure contract:** on any failure (network error, API error, timeout,
  * malformed / unparseable response), `judge` MUST throw. It MUST NOT return a
@@ -41,7 +41,7 @@ export interface JudgeClient {
 }
 
 /** Default Anthropic Claude model to use for judging. */
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
+const DEFAULT_MODEL = 'claude-sonnet-5';
 
 /** Anthropic Messages API endpoint. */
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -52,7 +52,7 @@ const ANTHROPIC_API_VERSION = '2023-06-01';
 export interface DefaultJudgeClientOptions {
   /** The Anthropic API key. Defaults to `process.env.ANTHROPIC_API_KEY`. */
   apiKey?: string;
-  /** The model to use. Defaults to `claude-sonnet-4-6`. */
+  /** The model to use. Defaults to `claude-sonnet-5`. */
   model?: string;
 }
 
