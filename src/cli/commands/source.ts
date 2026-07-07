@@ -44,8 +44,6 @@ export interface CliContext {
   readonly tierCStorePath?: string;
   /** User-level check-suppression config path; defaults to `~/.handler/config.json`. */
   readonly userConfigPath?: string;
-  /** Per-repo check-suppression config path; defaults to `<repo>/.handler/config.json`. */
-  readonly repoConfigPath?: string;
   /**
    * Injectable LLM judge client for Tier C invocation. When undefined, the
    * command will construct a `DefaultJudgeClient` from the environment.

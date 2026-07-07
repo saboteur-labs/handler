@@ -16,7 +16,10 @@
  *      loaded (non-orphan) definition is parsed with a `sourceKey` derived from
  *      its originating `AgentSource` (`${type}:${root}`), so fleet checks can
  *      tell "same name, different source" apart from "same name, same source".
- *   2. Resolve the check-suppression policy once (`resolvePolicy`).
+ *   2. Resolve the check-suppression policy per source (`resolvePolicy`):
+ *      built-in defaults -> global user config -> that source's own
+ *      `<root>/.handler/config.json` (repo sources only). Each agent is judged
+ *      by its own source's policy — there is no cwd-derived global repo layer.
  *   3. Run the full check registry (`tools` + `prompt` + `fleet`) against each
  *      non-orphan agent over the whole fleet, once, using an "all-enabled"
  *      variant of the resolved policy (every entry's `enabled` forced `true`,
@@ -28,6 +31,8 @@
  *      load) are tagged, not thrown, and excluded from the fleet passed to
  *      `runChecks` — same convention as `assessConventions`.
  */
+import { join } from 'node:path';
+
 import { isBuiltinAgent } from '../denylist';
 import type { AgentIdentity } from '../identity';
 import { agentIdentity } from '../identity';
@@ -92,10 +97,14 @@ export function reportTripsThreshold(report: StaticAssessReport, failOn: Severit
 
 export interface StaticAssessOptions {
   readonly sources: readonly AgentSource[];
-  /** User-level check-suppression config path; defaults to `~/.handler/config.json`. */
+  /**
+   * User-level check-suppression config path; defaults to `~/.handler/config.json`.
+   * Applied as the global layer over every source. Each repo source's own
+   * `<root>/.handler/config.json` is resolved automatically from its `root`
+   * and layered on top for that source's agents only — there is no
+   * cwd-derived global repo config.
+   */
   readonly userConfigPath?: string;
-  /** Per-repo check-suppression config path; omit for "no repo overrides". */
-  readonly repoConfigPath?: string;
   /**
    * Restrict which check categories run (e.g. a CLI `assess tools` invocation).
    * The fleet is always built in full regardless of this filter — fleet-level
@@ -110,10 +119,20 @@ function sourceKeyFor(source: AgentSource): string {
   return `${source.type}:${source.root}`;
 }
 
-/** One enumerated definition's identity, plus its parsed content when it loaded (orphan otherwise). */
+/** A source's resolved suppression policy plus its all-enabled variant (for suppressed accounting). */
+interface ResolvedPolicy {
+  readonly policy: EffectivePolicy;
+  readonly allEnabled: EffectivePolicy;
+}
+
+/**
+ * One enumerated definition's identity, its parsed content when it loaded
+ * (orphan otherwise), and the resolved policy of the source it came from.
+ */
 interface EnumeratedEntry {
   readonly identity: AgentIdentity;
   readonly parsed: ParsedDefinition | null;
+  readonly resolved: ResolvedPolicy;
 }
 
 /** Force every policy entry's `enabled` to `true`, keeping `severity`/`options` as resolved. */
@@ -137,28 +156,36 @@ function withAllEnabled(policy: EffectivePolicy): EffectivePolicy {
  * regardless, so fleet-level checks still see every sibling definition.
  */
 export function assess(options: StaticAssessOptions): StaticAssessReport {
+  // Resolve each registered source's policy once (built-in defaults -> global
+  // user config -> that source's own `<root>/.handler/config.json`, repo
+  // sources only) and attach it to every definition enumerated from that
+  // source, so each agent is judged by its own repo's committed policy.
+  const policyBySource = new Map<string, ResolvedPolicy>();
   const entries: EnumeratedEntry[] = [];
   for (const source of options.sources) {
     const sourceKey = sourceKeyFor(source);
+    let resolved = policyBySource.get(sourceKey);
+    if (resolved === undefined) {
+      const repoConfigPath =
+        source.type === 'repo' ? join(source.root, '.handler', 'config.json') : undefined;
+      const policy = resolvePolicy({ userConfigPath: options.userConfigPath, repoConfigPath });
+      resolved = { policy, allEnabled: withAllEnabled(policy) };
+      policyBySource.set(sourceKey, resolved);
+    }
     for (const name of enumerateDefinitionNames(source)) {
       if (isBuiltinAgent(name)) {
         continue;
       }
       const identity = agentIdentity(source, name);
       const snapshot = loadDefinitionSnapshot(source, name);
-      if (snapshot === null) {
-        entries.push({ identity, parsed: null });
-        continue;
-      }
-      entries.push({ identity, parsed: parseDefinition(snapshot, sourceKey) });
+      entries.push({
+        identity,
+        resolved,
+        parsed: snapshot === null ? null : parseDefinition(snapshot, sourceKey),
+      });
     }
   }
 
-  const policy = resolvePolicy({
-    userConfigPath: options.userConfigPath,
-    repoConfigPath: options.repoConfigPath,
-  });
-  const allEnabledPolicy = withAllEnabled(policy);
   const allChecks: readonly StaticCheck[] = [...TOOLS_CHECKS, ...PROMPT_CHECKS, ...FLEET_CHECKS];
   const selectedChecks: readonly StaticCheck[] =
     options.categories === undefined
@@ -175,11 +202,11 @@ export function assess(options: StaticAssessOptions): StaticAssessReport {
     if (entry.parsed === null) {
       return { identity: entry.identity, orphan: true, findings: [], suppressedFindings: [] };
     }
-    const full = runChecks(selectedChecks, entry.parsed, fleet, allEnabledPolicy);
+    const full = runChecks(selectedChecks, entry.parsed, fleet, entry.resolved.allEnabled);
     const findings: Finding[] = [];
     const suppressedFindings: Finding[] = [];
     for (const finding of full) {
-      const enabled = policy.get(finding.check)?.enabled ?? true;
+      const enabled = entry.resolved.policy.get(finding.check)?.enabled ?? true;
       if (enabled) {
         findings.push(finding);
       } else {

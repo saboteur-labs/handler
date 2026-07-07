@@ -48,8 +48,11 @@ describe('handler CLI: assess end-to-end integration (feature-static-assessment 
     rmSync(dir, { recursive: true, force: true });
   });
 
+  // No repoConfigPath is threaded: per-source resolution reads each repo
+  // source's own `<root>/.handler/config.json`, which for the registered
+  // `repo` is exactly `repoConfigPath` (written by `writeRepoConfig`).
   const invoke = (args: string[]): Promise<number> =>
-    run(args, { registryPath, userConfigPath, repoConfigPath, out: (line) => out.push(line) });
+    run(args, { registryPath, userConfigPath, out: (line) => out.push(line) });
 
   /**
    * Fixture 1 — a real two-agent `Agent(...)` spawn cycle: `looper-a` grants
@@ -330,31 +333,48 @@ describe('handler CLI: assess end-to-end integration (feature-static-assessment 
     expect(code).toBe(0);
   });
 
-  it('derives repo config from cwd when repoConfigPath is not passed (real-bin wiring)', async () => {
-    writeFullFixtureFleet();
-    await invoke(['source', 'register', repo]);
-    out.length = 0;
+  it('applies each repo source its own config — a check off in one repo still fires in another', async () => {
+    const wildcardDef = (name: string): string =>
+      [
+        '---',
+        `name: ${name}`,
+        `description: Use when the user wants the ${name} agent for a per-source config test.`,
+        'tools: Read, Write, "*"',
+        '---',
+        `You are ${name}, an over-broad agent for a per-source test.`,
+      ].join('\n');
 
-    // Mirror the real bin (`src/cli/main.ts`): pass NO explicit
-    // `repoConfigPath`, only `cwd` pointing at the repo, and let `run()` derive
-    // `<cwd>/.handler/config.json`. This proves the repo's committed policy is
-    // honored end to end through the default derivation — the wiring the bin
-    // actually exercises — not only when the path is injected explicitly.
-    const code = await run(['assess'], {
-      registryPath,
-      userConfigPath,
-      cwd: repo,
-      out: (line) => out.push(line),
-    });
-    const report = out.join('\n');
+    // repo 1: an over-broad agent, with a repo config disabling tools/over-broad.
+    writeFileSync(join(agentsDir, 'wild-one.md'), wildcardDef('wild-one'), 'utf8');
+    mkdirSync(join(repo, '.handler'), { recursive: true });
+    writeFileSync(
+      repoConfigPath,
+      JSON.stringify({ version: CONFIG_STORE_VERSION, checks: { 'tools/over-broad': 'off' } }),
+      'utf8',
+    );
 
-    // Both effects require the cwd-derived repo config to have loaded:
-    // `prompt/no-examples` is off by default (repo config re-enables it), and
-    // `tools/over-broad` is on by default (repo config disables it, so it is
-    // suppressed rather than surfaced but still footer-counted).
-    expect(report).toContain('prompt/no-examples');
-    expect(report).not.toContain('[info] tools/over-broad');
-    expect(report).toMatch(/suppressed: 1 \(tools\/over-broad\)/);
-    expect(code).toBe(1);
+    // repo 2: an over-broad agent, and NO repo config — over-broad stays on.
+    const repo2 = realpathSync.native(mkdtempSync(join(tmpdir(), 'handler-assess-repo2-')));
+    const agentsDir2 = join(repo2, '.claude', 'agents');
+    mkdirSync(agentsDir2, { recursive: true });
+    writeFileSync(join(agentsDir2, 'wild-two.md'), wildcardDef('wild-two'), 'utf8');
+
+    try {
+      await invoke(['source', 'register', repo]);
+      await invoke(['source', 'register', repo2]);
+      out.length = 0;
+
+      await invoke(['assess', 'tools']);
+      const report = out.join('\n');
+
+      // repo 2's over-broad is surfaced (its source has no suppression); repo
+      // 1's identical finding is suppressed by repo 1's own config — the same
+      // check diverges by source, which the old single global config could not do.
+      expect(report).toContain('[info] tools/over-broad'); // only wild-two's can surface
+      expect(report).toMatch(/wild-two[\s\S]*\[info\] tools\/over-broad/);
+      expect(report).toMatch(/suppressed: \d+ \([^)]*tools\/over-broad/); // wild-one's, footer-counted
+    } finally {
+      rmSync(repo2, { recursive: true, force: true });
+    }
   });
 });

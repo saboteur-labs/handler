@@ -78,7 +78,6 @@ function runAssess(
   const report = assess({
     sources: registry.list(),
     userConfigPath: ctx.userConfigPath,
-    repoConfigPath: ctx.repoConfigPath,
     categories: category === undefined ? undefined : [category],
   });
 

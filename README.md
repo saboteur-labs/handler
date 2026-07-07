@@ -195,10 +195,12 @@ shorthand severity string or an object with `options`:
 config degrades to the built-in defaults rather than erroring. Suppression is never
 silent — the footer always names how many findings were suppressed and by which check.
 
-Config resolves in three layers, each overriding the last: built-in defaults →
-user config (`~/.handler/config.json`) → repo config (`<cwd>/.handler/config.json`,
-read when you run `assess` from inside a repo). Commit a repo config to share a policy
-with your team; a personal `~/.handler/config.json` applies everywhere else.
+Config is resolved **per source**, in three layers each overriding the last:
+built-in defaults → your global user config (`~/.handler/config.json`) → that
+source's own repo config (`<repo-root>/.handler/config.json`, for registered
+repo sources). A repo's committed config governs only that repo's agents, so a
+single `assess` run applies each repo's policy to its own agents no matter where
+you run it from; your personal `~/.handler/config.json` applies everywhere.
 
 ### `handler list`
 

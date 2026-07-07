@@ -7,7 +7,6 @@
  * core never calls `process.exit`.
  */
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
 
 import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
@@ -48,21 +47,12 @@ export interface RunOptions {
   readonly anchorStorePath?: string;
   /** Tier C annotation store location; defaults to the core default. */
   readonly tierCStorePath?: string;
-  /** User-level check-suppression config path; defaults to `~/.handler/config.json`. */
+  /**
+   * User-level check-suppression config path; defaults to `~/.handler/config.json`.
+   * Each repo source's own `<root>/.handler/config.json` is resolved inside
+   * core from the source root — the CLI passes no per-repo path.
+   */
   readonly userConfigPath?: string;
-  /**
-   * Per-repo check-suppression config path. When omitted, it is derived from
-   * `cwd` as `<cwd>/.handler/config.json` so a repo's committed policy applies
-   * when `handler assess` is run from inside it (a missing file degrades to the
-   * user/built-in defaults). Pass explicitly to override.
-   */
-  readonly repoConfigPath?: string;
-  /**
-   * Working directory used to derive the default `repoConfigPath`; defaults to
-   * `process.cwd()`. Injectable so tests can exercise repo-config resolution
-   * without changing the process working directory.
-   */
-  readonly cwd?: string;
   /**
    * Injectable LLM judge client for Tier C invocation. When undefined, the
    * command will construct a `DefaultJudgeClient` from the environment.
@@ -126,8 +116,6 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     anchorStorePath: options.anchorStorePath,
     tierCStorePath: options.tierCStorePath,
     userConfigPath: options.userConfigPath,
-    repoConfigPath:
-      options.repoConfigPath ?? join(options.cwd ?? process.cwd(), '.handler', 'config.json'),
     judgeClient: options.judgeClient,
     readStdin: options.readStdin ?? readStdin,
     runEditor: options.runEditor ?? runEditor,
