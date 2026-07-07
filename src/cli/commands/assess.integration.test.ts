@@ -377,4 +377,29 @@ describe('handler CLI: assess end-to-end integration (feature-static-assessment 
       rmSync(repo2, { recursive: true, force: true });
     }
   });
+
+  it('surfaces a definition nested in an agents subfolder', async () => {
+    // Agents may be organized in subfolders; assess must still enumerate and
+    // check them (this one has frontmatter but an empty body -> empty-body).
+    const nestedDir = join(agentsDir, 'review');
+    mkdirSync(nestedDir, { recursive: true });
+    writeFileSync(
+      join(nestedDir, 'nested-agent.md'),
+      [
+        '---',
+        'name: nested-agent',
+        'description: Use when reviewing nested things thoroughly.',
+        '---',
+      ].join('\n'),
+      'utf8',
+    );
+
+    await invoke(['source', 'register', repo]);
+    out.length = 0;
+    await invoke(['assess']);
+
+    const report = out.join('\n');
+    expect(report).toContain('nested-agent');
+    expect(report).toContain('prompt/empty-body');
+  });
 });

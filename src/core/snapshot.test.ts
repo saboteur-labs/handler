@@ -37,4 +37,14 @@ describe('loadDefinitionSnapshot', () => {
   it('returns null when the agents dir does not exist at all', () => {
     expect(loadDefinitionSnapshot(repoSource(root), 'anything')).toBeNull();
   });
+
+  it('loads a definition nested in a subfolder by its basename name', () => {
+    const nestedDir = join(root, '.claude', 'agents', 'review');
+    mkdirSync(nestedDir, { recursive: true });
+    writeFileSync(join(nestedDir, 'security.md'), '---\nname: security\n---\nAudit deps', 'utf8');
+
+    expect(loadDefinitionSnapshot(repoSource(root), 'security')).toBe(
+      '---\nname: security\n---\nAudit deps',
+    );
+  });
 });

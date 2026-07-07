@@ -9,6 +9,7 @@
  * identity (Req 8) and the value the cwd-nearest-ancestor rule (Task 6)
  * compares against.
  */
+import type { Dirent } from 'node:fs';
 import { readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -41,19 +42,39 @@ export function repoSource(repoRoot: string): AgentSource {
   return { type: 'repo', root, agentsDir: agentsDirFor(root) };
 }
 
+/** Recursively collect `*.md` definition-file basename stems under `dir`. */
+function collectDefinitionStems(dir: string): string[] {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const stems: string[] = [];
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      // Recurse into real subdirectories only — not symlinked dirs, which
+      // could otherwise form a cycle.
+      stems.push(...collectDefinitionStems(join(dir, entry.name)));
+    } else if (entry.name.endsWith('.md')) {
+      // Any non-directory `.md`, including symlinks to definition files (a
+      // broken symlink is enumerated here but resolves to an orphan on load).
+      stems.push(entry.name.slice(0, -'.md'.length));
+    }
+  }
+  return stems;
+}
+
 /**
  * The `*.md` definition stems in a source's agents dir; empty when the dir is
  * absent or unreadable (a source that has not been populated yet). Includes
  * builtin/plugin names — callers apply the user-authored-only denylist.
+ *
+ * Discovery is recursive: Claude Code finds `.claude/agents/**\/*.md`, so
+ * definitions may live in organizational subfolders. Identity is the (basename)
+ * name, so a stem appearing in more than one subfolder — itself a Claude Code
+ * name collision — is deduped to a single entry.
  */
 export function enumerateDefinitionNames(source: AgentSource): string[] {
-  let entries: string[];
-  try {
-    entries = readdirSync(source.agentsDir);
-  } catch {
-    return [];
-  }
-  return entries
-    .filter((entry) => entry.endsWith('.md'))
-    .map((entry) => entry.slice(0, -'.md'.length));
+  return [...new Set(collectDefinitionStems(source.agentsDir))];
 }
