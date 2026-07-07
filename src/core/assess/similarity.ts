@@ -36,9 +36,11 @@ const STOPWORDS: ReadonlySet<string> = new Set([
 
 /**
  * Normalize `text` into a token set: lowercase, split on runs of
- * non-alphanumeric characters, drop empty fragments and stopwords.
+ * non-alphanumeric characters, drop empty fragments and stopwords. Exported
+ * so callers comparing one string against many (e.g. the fleet checks) can
+ * tokenize each input once and reuse the set across comparisons.
  */
-function tokenize(text: string): Set<string> {
+export function tokenize(text: string): Set<string> {
   const tokens = text
     .toLowerCase()
     .split(/[^a-z0-9]+/)
@@ -47,29 +49,34 @@ function tokenize(text: string): Set<string> {
 }
 
 /**
- * Token-set Jaccard similarity between `a` and `b`: `|intersection| / |union|`
- * over each string's normalized token set (see `tokenize`).
+ * Token-set Jaccard similarity between two normalized token sets:
+ * `|intersection| / |union|`.
  *
- * Empty-set edge case: when BOTH inputs normalize to an empty token set
- * (e.g. both are empty strings, or both consist entirely of stopwords),
- * there is no shared meaningful content to claim similarity over — this
- * returns `0` rather than `NaN` (which a naive `0/0` union-size division
- * would otherwise produce).
+ * Empty-set edge case: when BOTH sets are empty (e.g. both inputs were empty
+ * strings, or consisted entirely of stopwords), there is no shared meaningful
+ * content to claim similarity over — this returns `0` rather than `NaN` (which
+ * a naive `0/0` union-size division would otherwise produce).
  */
-export function similarity(a: string, b: string): number {
-  const tokensA = tokenize(a);
-  const tokensB = tokenize(b);
-
-  if (tokensA.size === 0 && tokensB.size === 0) {
+export function jaccard(a: ReadonlySet<string>, b: ReadonlySet<string>): number {
+  if (a.size === 0 && b.size === 0) {
     return 0;
   }
-
+  // Iterate the smaller set for the intersection count.
+  const [small, large] = a.size <= b.size ? [a, b] : [b, a];
   let intersectionSize = 0;
-  for (const token of tokensA) {
-    if (tokensB.has(token)) {
+  for (const token of small) {
+    if (large.has(token)) {
       intersectionSize += 1;
     }
   }
-  const unionSize = tokensA.size + tokensB.size - intersectionSize;
+  const unionSize = a.size + b.size - intersectionSize;
   return intersectionSize / unionSize;
+}
+
+/**
+ * Token-set Jaccard similarity between `a` and `b` over each string's
+ * normalized token set (see `tokenize`/`jaccard`).
+ */
+export function similarity(a: string, b: string): number {
+  return jaccard(tokenize(a), tokenize(b));
 }

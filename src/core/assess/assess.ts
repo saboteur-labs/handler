@@ -187,10 +187,11 @@ export function assess(options: StaticAssessOptions): StaticAssessReport {
   }
 
   const allChecks: readonly StaticCheck[] = [...TOOLS_CHECKS, ...PROMPT_CHECKS, ...FLEET_CHECKS];
+  const categories = options.categories;
   const selectedChecks: readonly StaticCheck[] =
-    options.categories === undefined
+    categories === undefined
       ? allChecks
-      : allChecks.filter((check) => options.categories?.includes(check.category) ?? true);
+      : allChecks.filter((check) => categories.includes(check.category));
   const fleet: readonly ParsedDefinition[] = entries
     .map((entry) => entry.parsed)
     .filter((parsed): parsed is ParsedDefinition => parsed !== null);

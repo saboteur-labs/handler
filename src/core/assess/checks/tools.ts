@@ -68,6 +68,25 @@ function buildSpawnGraph(
 }
 
 /**
+ * Memoized spawn graph, keyed by the `fleet` array (stable within an `assess`
+ * run). `spawn-loop` runs once per agent but the graph depends only on the
+ * fleet, so without this it would be rebuilt n times for an n-agent fleet.
+ */
+const spawnGraphCache = new WeakMap<
+  readonly ParsedDefinition[],
+  ReadonlyMap<string, readonly string[]>
+>();
+
+function spawnGraphFor(fleet: readonly ParsedDefinition[]): ReadonlyMap<string, readonly string[]> {
+  let graph = spawnGraphCache.get(fleet);
+  if (graph === undefined) {
+    graph = buildSpawnGraph(fleet);
+    spawnGraphCache.set(fleet, graph);
+  }
+  return graph;
+}
+
+/**
  * Find a path from `start` back to itself following outgoing spawn edges
  * (length >= 2, i.e. at least one hop), or `null` if `start` does not
  * participate in any cycle. A node participates in a cycle if and only if it
@@ -120,7 +139,7 @@ export const spawnLoopCheck: StaticCheck = {
     if (agent.name === undefined) {
       return [];
     }
-    const graph = buildSpawnGraph(fleet);
+    const graph = spawnGraphFor(fleet);
     const path = findCyclePath(graph, agent.name);
     if (path === null) {
       return [];

@@ -7,9 +7,40 @@
  * `similarity` helper (`../similarity.ts`) — one implementation for both
  * checks, per the spec's resolved decision.
  */
-import { similarity } from '../similarity';
 import type { Finding, StaticCheck } from '../check';
 import type { ParsedDefinition } from '../parse';
+import { jaccard, tokenize } from '../similarity';
+
+/**
+ * Per-agent normalized token-set caches for the fields the fleet checks
+ * compare (`description`, `body`). A fleet check runs once per agent and
+ * compares against every other member, so without memoization each agent's
+ * field is re-tokenized once per comparison — O(n²) tokenizations over a
+ * fleet of n. `ParsedDefinition` instances are stable for the lifetime of an
+ * `assess` run, so a `WeakMap` keyed by the agent computes each set once and
+ * reuses it across every comparison (and across both checks, for the fields
+ * they share). Entries are released once the fleet is unreferenced.
+ */
+const descriptionTokens = new WeakMap<ParsedDefinition, ReadonlySet<string>>();
+const bodyTokens = new WeakMap<ParsedDefinition, ReadonlySet<string>>();
+
+function descriptionTokensFor(agent: ParsedDefinition): ReadonlySet<string> {
+  let tokens = descriptionTokens.get(agent);
+  if (tokens === undefined) {
+    tokens = tokenize(agent.description ?? '');
+    descriptionTokens.set(agent, tokens);
+  }
+  return tokens;
+}
+
+function bodyTokensFor(agent: ParsedDefinition): ReadonlySet<string> {
+  let tokens = bodyTokens.get(agent);
+  if (tokens === undefined) {
+    tokens = tokenize(agent.body);
+    bodyTokens.set(agent, tokens);
+  }
+  return tokens;
+}
 
 /**
  * Default similarity threshold (Jaccard, 0–1) for both fleet checks when
@@ -38,6 +69,28 @@ function resolveThreshold(options?: Record<string, unknown>): number {
 }
 
 /**
+ * Memoized position-in-fleet lookup, keyed by the `fleet` array (stable within
+ * an `assess` run). Built once per fleet so `precedesInFleet` is an O(1) map
+ * read rather than two O(n) `Array.indexOf` scans per pair — the latter is
+ * O(n³) across a full fleet run.
+ */
+const fleetIndex = new WeakMap<
+  readonly ParsedDefinition[],
+  ReadonlyMap<ParsedDefinition, number>
+>();
+
+function indexInFleet(fleet: readonly ParsedDefinition[], def: ParsedDefinition): number {
+  let index = fleetIndex.get(fleet);
+  if (index === undefined) {
+    const built = new Map<ParsedDefinition, number>();
+    fleet.forEach((member, position) => built.set(member, position));
+    index = built;
+    fleetIndex.set(fleet, index);
+  }
+  return index.get(def) ?? -1;
+}
+
+/**
  * True when `agent` "precedes" `other` in the fleet's fixed iteration order —
  * used to emit a symmetric pairwise finding exactly once across a full
  * fleet run (each pair is compared when `check.run` is called once per
@@ -52,7 +105,7 @@ function precedesInFleet(
   agent: ParsedDefinition,
   other: ParsedDefinition,
 ): boolean {
-  return fleet.indexOf(agent) < fleet.indexOf(other);
+  return indexInFleet(fleet, agent) < indexInFleet(fleet, other);
 }
 
 /**
@@ -75,7 +128,7 @@ export const duplicateTriggerCheck: StaticCheck = {
       if (other === agent || !precedesInFleet(fleet, agent, other)) {
         continue;
       }
-      const score = similarity(agent.description ?? '', other.description ?? '');
+      const score = jaccard(descriptionTokensFor(agent), descriptionTokensFor(other));
       if (score >= threshold) {
         const agentLabel = agent.name ?? '(unnamed)';
         const otherLabel = other.name ?? '(unnamed)';
@@ -147,7 +200,7 @@ export const duplicateDefinitionCheck: StaticCheck = {
         continue;
       }
 
-      const bodyScore = similarity(agent.body, other.body);
+      const bodyScore = jaccard(bodyTokensFor(agent), bodyTokensFor(other));
       if (bodyScore >= threshold) {
         findings.push({
           check: 'fleet/duplicate-definition',
