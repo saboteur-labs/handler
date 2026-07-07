@@ -64,6 +64,14 @@ describe('parseToolScope', () => {
     expect([...scope.spawnTargets].sort()).toEqual(['reviewer', 'tester']);
   });
 
+  it('recovers trailing tool names from a malformed unbalanced-paren grant', () => {
+    // `Agent(reviewer` never closes; a naive paren-aware split would swallow
+    // Read/Write. The fallback plain-split keeps them in `granted`.
+    const scope = parseToolScope(def('tools: Agent(reviewer, Read, Write'));
+    expect(scope.granted.has('Read')).toBe(true);
+    expect(scope.granted.has('Write')).toBe(true);
+  });
+
   it('parses a wildcard Agent(*) grant', () => {
     const scope = parseToolScope(def('tools: Read, Agent(*)'));
     expect([...scope.spawnTargets]).toEqual(['*']);

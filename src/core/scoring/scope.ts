@@ -83,6 +83,13 @@ function inlineList(value: string): string[] {
     }
   }
   names.push(current);
+  // Unbalanced parens (a malformed grant like `Agent(a, b` with no close)
+  // would otherwise swallow every comma after the stray `(` into one token,
+  // dropping the trailing real tool names. Fall back to a plain comma split so
+  // those names are still recovered, as the pre-`Agent(...)` parser did.
+  if (depth !== 0) {
+    return trimmed.split(',');
+  }
   return names;
 }
 
