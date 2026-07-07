@@ -52,6 +52,7 @@ function makeRun(overrides: Partial<Run> & { identityKey: string; runId: string 
 function makeCtx(overrides?: Partial<CliContext>): CliContext {
   return {
     out: vi.fn(),
+    setExitCode: vi.fn(),
     readStdin: vi.fn(async () => ''),
     runEditor: vi.fn(() => 0),
     registryPath: undefined,

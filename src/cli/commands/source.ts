@@ -16,6 +16,14 @@ import { repoSource, SourceRegistry, userSource } from '../../core/index';
 
 export interface CliContext {
   readonly out: (line: string) => void;
+  /**
+   * Signal a non-zero process exit for a normally-completed run (e.g.
+   * `assess`'s `--fail-on`). Writes into a run-scoped holder that `run()`
+   * returns, keeping the "succeeded but non-zero" signal off the global
+   * `process.exitCode` so it is re-entrancy-safe and never clobbers a code an
+   * embedder set before calling `run()`.
+   */
+  readonly setExitCode: (code: number) => void;
   /** Registry file location; defaults to the core default when undefined. */
   readonly registryPath?: string;
   /** Transcripts root for ingestion; defaults to the core default. */
@@ -34,6 +42,10 @@ export interface CliContext {
   readonly anchorStorePath?: string;
   /** Tier C annotation store location; defaults to the core default. */
   readonly tierCStorePath?: string;
+  /** User-level check-suppression config path; defaults to `~/.handler/config.json`. */
+  readonly userConfigPath?: string;
+  /** Per-repo check-suppression config path; defaults to `<repo>/.handler/config.json`. */
+  readonly repoConfigPath?: string;
   /**
    * Injectable LLM judge client for Tier C invocation. When undefined, the
    * command will construct a `DefaultJudgeClient` from the environment.

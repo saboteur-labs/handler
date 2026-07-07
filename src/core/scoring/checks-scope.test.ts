@@ -12,9 +12,10 @@ function activity(...names: string[]): RunActivity {
 const declared = (...tools: string[]): ToolScope => ({
   declared: true,
   granted: new Set(tools),
+  spawnTargets: new Set(),
 });
 
-const undeclared: ToolScope = { declared: false, granted: new Set() };
+const undeclared: ToolScope = { declared: false, granted: new Set(), spawnTargets: new Set() };
 
 describe('scopeChecks', () => {
   it('passes when every used tool is granted, and reports unused grants', () => {

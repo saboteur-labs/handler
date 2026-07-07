@@ -7,6 +7,7 @@
  * core never calls `process.exit`.
  */
 import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 
 import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
@@ -14,6 +15,7 @@ import { Command, CommanderError } from 'commander';
 import type { JudgeClient } from '../core/index';
 import { VERSION } from '../core/index';
 import { registerAnchorCommand } from './commands/anchor';
+import { registerAssessCommand } from './commands/assess';
 import { registerConventionsCommand } from './commands/conventions';
 import { registerGuiCommand } from './commands/gui';
 import { registerDiffCommand } from './commands/diff';
@@ -46,6 +48,21 @@ export interface RunOptions {
   readonly anchorStorePath?: string;
   /** Tier C annotation store location; defaults to the core default. */
   readonly tierCStorePath?: string;
+  /** User-level check-suppression config path; defaults to `~/.handler/config.json`. */
+  readonly userConfigPath?: string;
+  /**
+   * Per-repo check-suppression config path. When omitted, it is derived from
+   * `cwd` as `<cwd>/.handler/config.json` so a repo's committed policy applies
+   * when `handler assess` is run from inside it (a missing file degrades to the
+   * user/built-in defaults). Pass explicitly to override.
+   */
+  readonly repoConfigPath?: string;
+  /**
+   * Working directory used to derive the default `repoConfigPath`; defaults to
+   * `process.cwd()`. Injectable so tests can exercise repo-config resolution
+   * without changing the process working directory.
+   */
+  readonly cwd?: string;
   /**
    * Injectable LLM judge client for Tier C invocation. When undefined, the
    * command will construct a `DefaultJudgeClient` from the environment.
@@ -89,8 +106,16 @@ const NORMAL_EXIT_CODES = new Set([
 export async function run(argv: readonly string[], options: RunOptions = {}): Promise<number> {
   const out = options.out ?? ((line: string) => process.stdout.write(`${line}\n`));
   const err = options.err ?? ((line: string) => process.stderr.write(`${line}\n`));
+  // Run-scoped exit-code holder. A command signals "succeeded but non-zero"
+  // (e.g. `assess`'s `--fail-on`) via `ctx.setExitCode`; `run()` returns this
+  // and never touches the global `process.exitCode`, so the signal can't leak
+  // across invocations or clobber a caller-set code.
+  let exitCode = 0;
   const ctx: CliContext = {
     out,
+    setExitCode: (code: number) => {
+      exitCode = code;
+    },
     registryPath: options.registryPath,
     projectsRoot: options.projectsRoot,
     storePath: options.storePath,
@@ -100,6 +125,9 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     tierBStorePath: options.tierBStorePath,
     anchorStorePath: options.anchorStorePath,
     tierCStorePath: options.tierCStorePath,
+    userConfigPath: options.userConfigPath,
+    repoConfigPath:
+      options.repoConfigPath ?? join(options.cwd ?? process.cwd(), '.handler', 'config.json'),
     judgeClient: options.judgeClient,
     readStdin: options.readStdin ?? readStdin,
     runEditor: options.runEditor ?? runEditor,
@@ -121,6 +149,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerShowCommand(program, ctx);
   registerDiffCommand(program, ctx);
   registerConventionsCommand(program, ctx);
+  registerAssessCommand(program, ctx);
   registerNoteCommand(program, ctx);
   registerTranscriptCommand(program, ctx);
   registerTrendCommand(program, ctx);
@@ -132,7 +161,11 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
 
   try {
     await program.parseAsync([...argv], { from: 'user' });
-    return 0;
+    // A command action may have called `ctx.setExitCode` (e.g. `assess`'s
+    // `--fail-on`) to signal a non-zero exit for a normally-completed run, as
+    // distinct from the thrown-error path below. Every other command leaves it
+    // at the initial `0`.
+    return exitCode;
   } catch (error) {
     if (error instanceof CommanderError) {
       // Commander already wrote any message via configureOutput above.
