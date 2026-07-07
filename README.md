@@ -1,5 +1,7 @@
 # handler
 
+_Every successful field agent needs a good handler._
+
 A local-first CLI that logs and evaluates the Claude Code subagents **you author** —
 the agent definitions under `~/.claude/agents` and `<repo>/.claude/agents`. handler
 observes and evaluates; it never edits your agents, and it only ever looks at your
@@ -12,6 +14,11 @@ It does this in two complementary ways:
   score (a band, a 0–100 composite, and the failing Tier A + tool-utilization checks).
 - **Conventions assessment** — checks each agent _definition_ against a distilled set
   of Anthropic's subagent conventions and reports violations citing the specific rule.
+- **Static assessment** — `handler assess` runs handler's own deterministic checks over
+  each definition, before an agent ever runs: tool-scope hygiene (spawn-loop cycles,
+  over-broad grants), prompt structure (empty body, size as a per-run cost proxy), and
+  fleet-level duplication (near-identical descriptions or bodies). Report-only, no
+  network, and every check is configurable or suppressible.
 - **Judged quality (Tier C)** — an _optional_, opt-in LLM-judge signal that asks whether
   a run actually fulfilled the agent's own stated role, with the judge's reasoning
   attached. It is segregated from the deterministic score and never blended into it
@@ -60,8 +67,9 @@ The rest of this README uses `handler` as shorthand for `node dist/cli/index.js`
 handler source register --user           # ~/.claude/agents
 handler source register /path/to/repo    # <repo>/.claude/agents
 
-# 2. Assess the definitions against Anthropic's subagent conventions
+# 2. Assess the definitions — against Anthropic's conventions, and handler's own checks
 handler conventions
+handler assess
 
 # 3. See behavioral history once your agents have run
 handler list
@@ -117,6 +125,82 @@ The rules:
 
 A skill-generated default standard ships with the build, so `handler conventions`
 produces real results out of the box — no setup required.
+
+### `handler assess`
+
+Statically assess your agent definitions with handler's own deterministic checks.
+This complements `handler conventions`: where `conventions` measures conformance to
+Anthropic's distilled standard, `assess` reports handler's own opinions about a
+definition — tool-scope hygiene, prompt structure, and fleet-level duplication. It
+reads definitions only: no network, no LLM, and it never edits anything.
+
+Run every category, or one at a time:
+
+- `handler assess` — every check across every registered source.
+- `handler assess tools|prompt|fleet` — only that category. The full roster is
+  still loaded either way, because some checks compare agents against each other.
+
+```
+repo  looper-a
+  [error] tools/spawn-loop  spawn cycle: looper-a -> looper-b -> looper-a
+repo  reviewer-x
+  [warn] fleet/duplicate-trigger  "reviewer-x" and "reviewer-y" have highly similar
+         descriptions (similarity 0.85 >= 0.8), risking routing ambiguity
+repo  code-reviewer
+  no findings
+suppressed: 4 (prompt/no-examples)
+```
+
+The checks:
+
+| Check                        | Severity              | Fires when                                                                                       |
+| ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------ |
+| `tools/spawn-loop`           | error                 | an agent's `Agent(...)` grants form a cycle across the roster (or it spawns itself).             |
+| `tools/redundant-wildcard`   | warn                  | a `*` / `Agent(*)` wildcard is granted alongside named tools of the same family.                 |
+| `tools/over-broad`           | info                  | a wildcard tool scope, or more than `maxTools` (default 10) granted tools.                       |
+| `prompt/empty-body`          | error                 | the definition has frontmatter but no system-prompt body.                                        |
+| `prompt/no-examples`         | info (off by default) | the body contains no `<example>` block.                                                          |
+| `prompt/size`                | info                  | the estimated definition size exceeds `maxTokens` (default 4000) — a per-run cost proxy.         |
+| `fleet/duplicate-trigger`    | warn                  | two agents' descriptions are ≥ `similarityThreshold` (default 0.8) similar — routing ambiguity.  |
+| `fleet/duplicate-definition` | info                  | two agents share a `name` across different sources, or their bodies are ≥ the threshold similar. |
+
+Flags:
+
+- `--all` — also show findings that config currently suppresses. Suppressed findings
+  are hidden by default but always summarized in the footer; `--all` prints them in
+  full, marked `(suppressed)`.
+- `--fail-on <severity>` — the minimum severity that makes the command exit non-zero
+  (default `error`), so `assess` works as a CI gate. `--fail-on warn` is stricter;
+  nothing below the threshold affects the exit code, and suppressed findings never do.
+
+**Configuring checks.** `assess` reads an optional config at `~/.handler/config.json`
+to enable, disable, or re-level individual checks — so you can silence opinions you
+disagree with without touching your agent definitions. Each check id maps to either a
+shorthand severity string or an object with `options`:
+
+```json
+{
+  "version": 1,
+  "checks": {
+    "prompt/no-examples": "warn",
+    "fleet/duplicate-trigger": "off",
+    "prompt/size": { "options": { "maxTokens": 8000 } },
+    "tools/over-broad": { "severity": "warn", "options": { "maxTools": 15 } }
+  }
+}
+```
+
+`"off"` disables a check; a bare severity re-levels it; `options` tunes its thresholds
+(`maxTools`, `maxTokens`, `similarityThreshold`). A missing, malformed, or wrong-version
+config degrades to the built-in defaults rather than erroring. Suppression is never
+silent — the footer always names how many findings were suppressed and by which check.
+
+Config is resolved **per source**, in three layers each overriding the last:
+built-in defaults → your global user config (`~/.handler/config.json`) → that
+source's own repo config (`<repo-root>/.handler/config.json`, for registered
+repo sources). A repo's committed config governs only that repo's agents, so a
+single `assess` run applies each repo's policy to its own agents no matter where
+you run it from; your personal `~/.handler/config.json` applies everywhere.
 
 ### `handler list`
 

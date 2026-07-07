@@ -180,6 +180,7 @@ beforeAll(async () => {
 
   const ctx: CliContext = {
     out: () => {},
+    setExitCode: () => {},
     readStdin: async () => '',
     runEditor: () => 0,
     registryPath,

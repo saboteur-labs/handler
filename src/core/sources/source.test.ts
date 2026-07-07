@@ -1,10 +1,10 @@
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { normalizePath } from '../paths';
-import { repoSource, userSource } from './source';
+import { enumerateDefinitionNames, repoSource, userSource } from './source';
 
 describe('agent sources (Req 4)', () => {
   let dir: string;
@@ -44,6 +44,22 @@ describe('agent sources (Req 4)', () => {
       const source = repoSource(`${join(dir, 'pkg', '..')}/`);
       expect(source.root).toBe(dir);
       expect(source.agentsDir).toBe(join(dir, '.claude', 'agents'));
+    });
+  });
+
+  describe('enumerateDefinitionNames', () => {
+    it('surfaces definitions in nested subfolders alongside top-level ones', () => {
+      const agentsDir = join(dir, '.claude', 'agents');
+      mkdirSync(join(agentsDir, 'review'), { recursive: true });
+      writeFileSync(join(agentsDir, 'top.md'), 'x', 'utf8');
+      writeFileSync(join(agentsDir, 'review', 'security.md'), 'x', 'utf8');
+      writeFileSync(join(agentsDir, 'review', 'notes.txt'), 'x', 'utf8'); // ignored (not .md)
+
+      expect(enumerateDefinitionNames(repoSource(dir)).sort()).toEqual(['security', 'top']);
+    });
+
+    it('returns an empty list when the agents dir is absent', () => {
+      expect(enumerateDefinitionNames(repoSource(dir))).toEqual([]);
     });
   });
 });

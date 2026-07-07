@@ -18,9 +18,16 @@ export interface ToolScope {
   readonly declared: boolean;
   /** The granted tool names; empty when undeclared. */
   readonly granted: ReadonlySet<string>;
+  /**
+   * Spawn-target agent names parsed from `Agent(...)` grants in the same
+   * `tools:` list (`Agent(a)`, `Agent(a, b)`, `Agent(*)`). The literal `*` is
+   * included for a wildcard grant so callers can distinguish "wildcard spawn"
+   * from "no spawn grants". Empty when no `Agent(...)` grant is present.
+   */
+  readonly spawnTargets: ReadonlySet<string>;
 }
 
-const UNDECLARED: ToolScope = { declared: false, granted: new Set() };
+const UNDECLARED: ToolScope = { declared: false, granted: new Set(), spawnTargets: new Set() };
 
 /** Parse the `tools` scope from a definition snapshot (or `null` orphan). */
 export function parseToolScope(snapshot: string | null): ToolScope {
@@ -41,7 +48,8 @@ export function parseToolScope(snapshot: string | null): ToolScope {
   const value = (lines[keyIndex] ?? '').replace(/^tools:/, '').trim();
   const names = value === '' ? blockSequence(lines, keyIndex + 1) : inlineList(value);
   const granted = new Set(names.map(cleanName).filter((name) => name.length > 0));
-  return granted.size > 0 ? { declared: true, granted } : UNDECLARED;
+  const spawnTargets = parseSpawnTargets(names);
+  return granted.size > 0 ? { declared: true, granted, spawnTargets } : UNDECLARED;
 }
 
 /** The text between the leading `---` fences, or `null` when absent/unterminated. */
@@ -51,9 +59,64 @@ export function extractFrontmatter(content: string): string | null {
   return match?.[1] ?? null;
 }
 
-/** Split an inline list, tolerating a surrounding `[...]`. */
+/**
+ * Split an inline list, tolerating a surrounding `[...]`. Commas nested inside
+ * `Agent(...)` parens are not split points, so `Agent(a, b)` stays one token
+ * (matching a plain comma-split for any input that has no parens).
+ */
 function inlineList(value: string): string[] {
-  return value.replace(/^\[/, '').replace(/\]$/, '').split(',');
+  const trimmed = value.replace(/^\[/, '').replace(/\]$/, '');
+  const names: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const char of trimmed) {
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth = Math.max(0, depth - 1);
+    }
+    if (char === ',' && depth === 0) {
+      names.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  names.push(current);
+  // Unbalanced parens (a malformed grant like `Agent(a, b` with no close)
+  // would otherwise swallow every comma after the stray `(` into one token,
+  // dropping the trailing real tool names. Fall back to a plain comma split so
+  // those names are still recovered, as the pre-`Agent(...)` parser did.
+  if (depth !== 0) {
+    return trimmed.split(',');
+  }
+  return names;
+}
+
+/** Match a single `Agent(...)` grant token, capturing its inner content. */
+const AGENT_GRANT = /^Agent\(\s*(.*?)\s*\)$/;
+
+/** Parse `Agent(...)` grant tokens (from either list form) into spawn targets. */
+function parseSpawnTargets(names: readonly string[]): Set<string> {
+  const targets = new Set<string>();
+  for (const raw of names) {
+    const match = AGENT_GRANT.exec(cleanName(raw));
+    if (match === null) {
+      continue;
+    }
+    const inner = match[1] ?? '';
+    if (inner === '*') {
+      targets.add('*');
+      continue;
+    }
+    for (const part of inner.split(',')) {
+      const target = cleanName(part);
+      if (target.length > 0) {
+        targets.add(target);
+      }
+    }
+  }
+  return targets;
 }
 
 /** Collect the `- item` entries of a YAML block sequence from `start`. */

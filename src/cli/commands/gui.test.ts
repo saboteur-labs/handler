@@ -44,6 +44,7 @@ const mockStartGuiServer = vi.mocked(startGuiServer);
 function makeCtx(lines: string[] = []): CliContext {
   return {
     out: (line) => lines.push(line),
+    setExitCode: () => {},
     readStdin: async () => '',
     runEditor: () => 0,
   };

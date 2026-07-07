@@ -36,6 +36,61 @@ export type { AgentAssessment, AssessOptions, ConventionsAssessment } from './co
 export { assessConventions } from './conventions/assess';
 export type { ConventionSmell, ConventionViolation, RuleId } from './conventions/checks';
 export { checkConventions } from './conventions/checks';
+export type { ParsedDefinition } from './assess/parse';
+export { extractBody, parseDefinition } from './assess/parse';
+export type {
+  Category,
+  EffectivePolicy,
+  Finding,
+  PolicyEntry,
+  Severity,
+  StaticCheck,
+} from './assess/check';
+export { runChecks } from './assess/run-checks';
+export { compareSeverity, meetsOrExceedsSeverity, SEVERITY_RANK } from './assess/severity';
+export type {
+  StaticAgentAssessment,
+  StaticAssessOptions,
+  StaticAssessReport,
+  SuppressedSummary,
+} from './assess/assess';
+export { assess, reportTripsThreshold } from './assess/assess';
+export type {
+  CheckConfigValue,
+  ConfigFile,
+  ConfigMissingReason,
+  LoadedConfig,
+  ResolvePolicyOptions,
+} from './assess/config-store';
+export {
+  CONFIG_STORE_VERSION,
+  defaultUserConfigPath,
+  loadConfig,
+  resolvePolicy,
+} from './assess/config-store';
+export {
+  DEFAULT_MAX_TOOLS,
+  overBroadCheck,
+  redundantWildcardCheck,
+  spawnLoopCheck,
+  TOOLS_CHECKS,
+} from './assess/checks/tools';
+export {
+  DEFAULT_MAX_TOKENS,
+  emptyBodyCheck,
+  noExamplesCheck,
+  PROMPT_CHECKS,
+  sizeCheck,
+} from './assess/checks/prompt';
+export { similarity } from './assess/similarity';
+export {
+  DEFAULT_SIMILARITY_THRESHOLD,
+  duplicateDefinitionCheck,
+  duplicateTriggerCheck,
+  FLEET_CHECKS,
+} from './assess/checks/fleet';
+export type { ToolScope } from './scoring/scope';
+export { parseToolScope } from './scoring/scope';
 export type {
   ConventionRules,
   ConventionsArtifact,
