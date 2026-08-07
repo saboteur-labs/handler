@@ -177,3 +177,14 @@ export type {
   TranscriptTurn,
 } from './transcripts/transcript';
 export { readTranscript } from './transcripts/transcript';
+export type {
+  ExecuteResetOptions,
+  PlanResetOptions,
+  ResetOutcome,
+  ResetPaths,
+  ResetPlan,
+  ResetScope,
+  ResetTarget,
+  ResetTargetKey,
+} from './reset';
+export { executeReset, planReset, RESET_SCOPES } from './reset';

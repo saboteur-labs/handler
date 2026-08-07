@@ -10,3 +10,6 @@ dist/gui/
 
 # Local Claude Code settings (machine-specific)
 .claude/settings.local.json
+
+# Subagent memory: per-session local state, not shared project knowledge
+.claude/agent-memory/

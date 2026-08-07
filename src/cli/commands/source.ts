@@ -53,6 +53,13 @@ export interface CliContext {
   readonly readStdin: () => Promise<string>;
   /** Opens `$EDITOR` on `filePath`, returning its exit code (`note edit`). */
   readonly runEditor: (filePath: string) => number;
+  /**
+   * Asks the user to confirm a destructive action (`reset`). Resolves false to
+   * abort. The default implementation reads a y/N answer from the terminal and
+   * refuses when stdin is not a TTY, so a piped or CI invocation can never be
+   * taken as consent — such callers must pass `--yes` explicitly.
+   */
+  readonly confirm: (question: string) => Promise<boolean>;
 }
 
 interface RegisterOptions {

@@ -7,6 +7,7 @@
  * core never calls `process.exit`.
  */
 import { spawnSync } from 'node:child_process';
+import { createInterface } from 'node:readline/promises';
 
 import chalk from 'chalk';
 import { Command, CommanderError } from 'commander';
@@ -23,6 +24,7 @@ import { registerInsightsCommand } from './commands/insights';
 import { registerJudgeCommand } from './commands/judge';
 import { registerListCommand } from './commands/list';
 import { registerNoteCommand } from './commands/note';
+import { registerResetCommand } from './commands/reset';
 import { registerShowCommand } from './commands/show';
 import type { CliContext } from './commands/source';
 import { registerSourceCommand } from './commands/source';
@@ -64,6 +66,8 @@ export interface RunOptions {
   readonly readStdin?: () => Promise<string>;
   /** Opens `$EDITOR` on a file; defaults to spawning the user's editor. */
   readonly runEditor?: (filePath: string) => number;
+  /** Confirms a destructive action; defaults to a y/N prompt on the terminal. */
+  readonly confirm?: (question: string) => Promise<boolean>;
 }
 
 /** Drain `process.stdin` to a string, for piping a note body in (`note set`). */
@@ -84,6 +88,24 @@ function runEditor(filePath: string): number {
   const editor = process.env.VISUAL ?? process.env.EDITOR ?? 'vi';
   const result = spawnSync(`${editor} "${filePath}"`, { stdio: 'inherit', shell: true });
   return result.status ?? 1;
+}
+
+/**
+ * Ask a y/N question on the terminal, defaulting to no. A non-TTY stdin is
+ * answered "no" rather than prompting: a piped or scripted run has nobody to
+ * answer, and silence must never destroy data — those callers pass `--yes`.
+ */
+async function confirm(question: string): Promise<boolean> {
+  if (process.stdin.isTTY !== true) {
+    return false;
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(`${question} [y/N] `);
+    return /^y(es)?$/i.test(answer.trim());
+  } finally {
+    rl.close();
+  }
 }
 
 /** Commander error codes that are normal terminations (help / version output). */
@@ -119,6 +141,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
     judgeClient: options.judgeClient,
     readStdin: options.readStdin ?? readStdin,
     runEditor: options.runEditor ?? runEditor,
+    confirm: options.confirm ?? confirm,
   };
 
   const program = new Command();
@@ -146,6 +169,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerInsightsCommand(program, ctx);
   registerHookCommand(program, ctx);
   registerGuiCommand(program, ctx);
+  registerResetCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });

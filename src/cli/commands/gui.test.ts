@@ -47,6 +47,7 @@ function makeCtx(lines: string[] = []): CliContext {
     setExitCode: () => {},
     readStdin: async () => '',
     runEditor: () => 0,
+    confirm: () => Promise.resolve(false),
   };
 }
 

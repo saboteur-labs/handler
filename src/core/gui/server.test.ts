@@ -55,6 +55,7 @@ function makeCtx(overrides?: Partial<CliContext>): CliContext {
     setExitCode: vi.fn(),
     readStdin: vi.fn(async () => ''),
     runEditor: vi.fn(() => 0),
+    confirm: vi.fn(() => Promise.resolve(false)),
     registryPath: undefined,
     projectsRoot: undefined,
     storePath: undefined,
