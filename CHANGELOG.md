@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.7](https://github.com/saboteur-labs/handler/compare/handler-v0.1.6...handler-v0.1.7) (2026-08-07)
+
+
+### Features
+
+* **assess:** add static definition assessment command + suppression config ([ed9ca9f](https://github.com/saboteur-labs/handler/commit/ed9ca9f9953b9167d5d9f56ce88740746b8914aa))
+* **assess:** static definition assessment + suppression config, plus scoped reset ([00d09ed](https://github.com/saboteur-labs/handler/commit/00d09eda3cd3357ae4e183c5309844186ef73e74))
+* **assess:** static definition assessment command + suppression config ([57ee3db](https://github.com/saboteur-labs/handler/commit/57ee3dbd419da921870cd14511c453433bed128e))
+* **reset:** add scoped `handler reset` for clearing local stores ([d88671a](https://github.com/saboteur-labs/handler/commit/d88671a7a65821eba2853e1c41ad372d9072d36b))
+
+
+### Bug Fixes
+
+* **assess:** resolve check-suppression config per source, not by cwd ([6bf070b](https://github.com/saboteur-labs/handler/commit/6bf070b2f2ea8e76e087174c2d4c2225d6f5f194))
+* **scope:** recover trailing tools from an unbalanced-paren tools list ([2a190da](https://github.com/saboteur-labs/handler/commit/2a190dad367df245eec1d99cdeddc167e8235d74))
+* **sources:** discover agent definitions in subfolders recursively ([6a6db3d](https://github.com/saboteur-labs/handler/commit/6a6db3da86e1547be0f97fb9deaa2c93da5f7b5b))
+
+
+### Performance Improvements
+
+* **assess:** memoize fleet-global work in the static checks ([908b9e9](https://github.com/saboteur-labs/handler/commit/908b9e9b1b9c4885da33b54b77dfacd5c450e657))
+
 ## [0.1.6](https://github.com/saboteur-labs/handler/compare/handler-v0.1.5...handler-v0.1.6) (2026-06-19)
 
 
