@@ -98,6 +98,8 @@ describe('handler CLI: show command (Req 11)', () => {
       projectsRoot,
       scoreStorePath: join(dir, 'scores.json'),
       noteStorePath: join(dir, 'notes.json'),
+      tierBStorePath: join(dir, 'tier-b.json'),
+      tierCStorePath: join(dir, 'tier-c.json'),
       out: (line) => out.push(line),
     });
 
