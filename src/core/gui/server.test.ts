@@ -44,27 +44,29 @@ function makeRun(overrides: Partial<Run> & { identityKey: string; runId: string 
 // ---------------------------------------------------------------------------
 
 /**
- * Build a minimal CliContext whose store paths point nowhere real.
- * The server constructs store instances from these paths; the stores will
- * just read empty JSON from nonexistent files (that is the designed
- * degradation path).
+ * Build a minimal CliContext whose store paths point at nonexistent files in
+ * the per-test temp dir. The server constructs store instances from these
+ * paths; the stores will just read empty JSON from nonexistent files (that is
+ * the designed degradation path). An `undefined` path would fall back to the
+ * real `~/.handler`, so every path is set explicitly.
  */
 function makeCtx(overrides?: Partial<CliContext>): CliContext {
+  const stores = join(assetsDir, 'stores');
   return {
     out: vi.fn(),
     setExitCode: vi.fn(),
     readStdin: vi.fn(async () => ''),
     runEditor: vi.fn(() => 0),
     confirm: vi.fn(() => Promise.resolve(false)),
-    registryPath: undefined,
-    projectsRoot: undefined,
-    storePath: undefined,
-    scoreStorePath: undefined,
-    conventionsPath: undefined,
-    noteStorePath: undefined,
-    tierBStorePath: undefined,
-    anchorStorePath: undefined,
-    tierCStorePath: undefined,
+    registryPath: join(stores, 'sources.json'),
+    projectsRoot: join(stores, 'projects'),
+    storePath: join(stores, 'runs.json'),
+    scoreStorePath: join(stores, 'scores.json'),
+    conventionsPath: join(stores, 'conventions.json'),
+    noteStorePath: join(stores, 'notes.json'),
+    tierBStorePath: join(stores, 'tier-b.json'),
+    anchorStorePath: join(stores, 'anchors.json'),
+    tierCStorePath: join(stores, 'tier-c.json'),
     ...overrides,
   };
 }
