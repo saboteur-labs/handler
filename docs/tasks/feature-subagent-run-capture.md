@@ -1,6 +1,6 @@
 # Task List: Subagent run capture (restoring attribution)
 
-**Feature source:** `specs/features/subagent-run-capture.md` (FR-1 to FR-36)
+**Feature source:** `docs/specs/feature-subagent-run-capture.md` (FR-1 to FR-36)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md. Each task writes the failing test first, then the minimum code, then refactors. Core logic in `src/core/`, CLI thin in `src/cli/`. Named exports, explicit return types, kebab-case files. Persistence only through `src/core/store/json-store.ts`. Check with `npx vitest run <file>`, `npm test`, `npm run typecheck`, `npm run lint`.
 **Parallelism:** tasks with no dependency between them touch disjoint files so they can run concurrently in isolated worktrees. Tasks that share a file (`src/core/run.ts`, `src/core/ingest.ts`, `src/core/index.ts` (Task 13 only), `src/cli/index.ts`) are ordered by dependency.
