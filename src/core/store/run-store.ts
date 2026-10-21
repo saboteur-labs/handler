@@ -28,11 +28,13 @@ interface RunStoreFile {
  * (`'hook' | 'transcript' | undefined`) added to `Run` in the hook ingestion task.
  * Bumped to 6 to cover the `parentAgentId?: string` field added to `Run` for
  * nested subagent capture (V1 Feature 7).
+ * Bumped to 7 to cover the `'runlog'` value of `source` and the optional
+ * `spawnDepth` field added to `Run` for meta-discovered subagent run capture.
  * The bump is also the backfill trigger: a stale store is discarded and the next
  * ingest rebuilds it from transcripts with the new fields populated for every run
  * whose sub-transcript still exists.
  */
-export const RUN_STORE_VERSION = 6;
+export const RUN_STORE_VERSION = 7;
 
 /** Default run-store location: `~/.handler/runs.json`. */
 export function defaultRunStorePath(): string {

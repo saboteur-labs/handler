@@ -104,6 +104,26 @@ describe('RunStore', () => {
     expect(store.list()).toHaveLength(1); // re-ingested under the current schema
   });
 
+  it('discards a version-6 store, degrading to empty (v7 bump)', () => {
+    expect(RUN_STORE_VERSION).toBe(7);
+    writeFileSync(file, JSON.stringify({ version: 6, runs: [run()] }), 'utf8');
+    expect(new RunStore(file).list()).toEqual([]);
+  });
+
+  it('round-trips a runlog-sourced run with spawnDepth', () => {
+    writeFileSync(
+      file,
+      JSON.stringify({
+        version: RUN_STORE_VERSION,
+        runs: [run({ source: 'runlog', spawnDepth: 2 })],
+      }),
+      'utf8',
+    );
+    const loaded = new RunStore(file).list();
+    expect(loaded[0]?.source).toBe('runlog');
+    expect(loaded[0]?.spawnDepth).toBe(2);
+  });
+
   describe('parentAgentId field (v6 schema)', () => {
     it('discards a store written under version 5 (old schema)', () => {
       writeFileSync(file, JSON.stringify({ version: 5, runs: [run()] }), 'utf8');

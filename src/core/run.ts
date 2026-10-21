@@ -64,9 +64,12 @@ export interface Run {
    * record was assembled from a parsed JSONL transcript (authoritative);
    * `'hook'` means it was written as a real-time stub by the SubagentStop hook
    * handler (may be superseded by a subsequent transcript ingest).
+   * `'runlog'` means it was imported from a runlog (lowest precedence).
    * `undefined` for records written before this field was introduced.
    */
-  readonly source?: 'hook' | 'transcript';
+  readonly source?: 'hook' | 'transcript' | 'runlog';
+  /** Nesting depth of a meta-discovered run (1 = top-level subagent); optional. */
+  readonly spawnDepth?: number;
   /**
    * The `agentId` of the parent subagent when this run was spawned by another
    * subagent (nested subagent capture). `undefined` for top-level runs or for

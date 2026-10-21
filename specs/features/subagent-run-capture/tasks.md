@@ -55,7 +55,7 @@
 **Depends on:** 1
 **Estimate:** 3
 **Notes:** Covers FR-22 (precedence rule and type), FR-24. FR-23 (applying it in `persist()`) lands in Task 7, and the hook path applies it in Task 10. The store keeps deduping on `(identityKey, runId)` (FR-16); do not change `isSameRun`. This task owns edits to `run-store.ts`; keep `run.ts` changes to types so Task 6 can extend the file afterward.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 6: Meta-run assembly and shared capture assembler
 
