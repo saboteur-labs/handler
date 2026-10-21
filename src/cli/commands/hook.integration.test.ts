@@ -33,15 +33,11 @@ function hookPayload(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
   return {
-    agentId: 'agent-hook-001',
-    agentType: AGENT_NAME,
+    agent_id: 'agent-hook-001',
+    agent_type: AGENT_NAME,
     cwd,
-    sessionId: 'session-hook-001',
-    status: 'completed',
-    totalDurationMs: 1500,
-    totalTokens: 600,
-    totalToolUseCount: 4,
-    toolStats: { readCount: 3 },
+    session_id: 'session-hook-001',
+    hook_event_name: 'SubagentStop',
     ...overrides,
   };
 }
@@ -160,7 +156,7 @@ describe('hook integration: SubagentStop round-trip', () => {
     const store = new RunStore(storePath);
 
     const result = handleSubagentStop(
-      hookPayload(repoRoot, { agentType: 'Explore', agentId: 'agent-explore-1' }),
+      hookPayload(repoRoot, { agent_type: 'Explore', agent_id: 'agent-explore-1' }),
       sources,
       store,
     );
@@ -174,7 +170,7 @@ describe('hook integration: SubagentStop round-trip', () => {
     const store = new RunStore(storePath);
 
     const result = handleSubagentStop(
-      hookPayload(repoRoot, { agentType: 'Plan', agentId: 'agent-plan-1' }),
+      hookPayload(repoRoot, { agent_type: 'Plan', agent_id: 'agent-plan-1' }),
       sources,
       store,
     );
@@ -199,12 +195,12 @@ describe('hook integration: SubagentStop round-trip', () => {
     expect(store.list()).toHaveLength(0);
   });
 
-  it('malformed payload: missing required agentId field → zero records, does not throw', () => {
+  it('malformed payload: missing required agent_id field → zero records, does not throw', () => {
     const sources = [repoSource(repoRoot)];
     const store = new RunStore(storePath);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { agentId: _agentId, ...noAgentId } = hookPayload(repoRoot);
+    const { agent_id: _agentId, ...noAgentId } = hookPayload(repoRoot);
 
     let result: string | undefined;
     expect(() => {
@@ -215,19 +211,19 @@ describe('hook integration: SubagentStop round-trip', () => {
     expect(store.list()).toHaveLength(0);
   });
 
-  it('malformed payload: missing required agentType field → zero records, does not throw', () => {
+  it('malformed payload: missing agent_type → skipped, zero records, does not throw', () => {
     const sources = [repoSource(repoRoot)];
     const store = new RunStore(storePath);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { agentType: _agentType, ...noAgentType } = hookPayload(repoRoot);
+    const { agent_type: _agentType, ...noAgentType } = hookPayload(repoRoot);
 
     let result: string | undefined;
     expect(() => {
       result = handleSubagentStop(noAgentType, sources, store);
     }).not.toThrow();
 
-    expect(result).toBe('malformed');
+    expect(result).toBe('skipped');
     expect(store.list()).toHaveLength(0);
   });
 

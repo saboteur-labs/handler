@@ -105,7 +105,7 @@
 **Depends on:** 5, 6, 9
 **Estimate:** 3
 **Notes:** Covers FR-7 (hook side), FR-16 (hook side, with a test where one agentId resolves differently), FR-18, FR-19, FR-22 (hook side), FR-34 (handler tests). The existing return type `HandleResult` may stay as is. This task does not edit `src/core/index.ts`; any new export it needs is added by Task 13.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 11: Hook CLI entrypoint hardening
 

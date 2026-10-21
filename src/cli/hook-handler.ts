@@ -58,10 +58,10 @@ async function main(): Promise<void> {
     parsed !== null &&
     typeof parsed === 'object' &&
     !Array.isArray(parsed) &&
-    'agentId' in parsed &&
-    typeof (parsed as Record<string, unknown>).agentId === 'string'
+    'agent_id' in parsed &&
+    typeof (parsed as Record<string, unknown>).agent_id === 'string'
   ) {
-    agentId = (parsed as Record<string, unknown>).agentId as string;
+    agentId = (parsed as Record<string, unknown>).agent_id as string;
   }
 
   const label = result === 'malformed' ? 'malformed' : result;

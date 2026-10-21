@@ -119,14 +119,10 @@ describe('handler-hook binary (subprocess)', () => {
     );
 
     const payload = JSON.stringify({
-      agentId: 'agent-abc123',
-      agentType: 'my-agent',
+      agent_id: 'agent-abc123',
+      agent_type: 'my-agent',
       cwd: repo,
-      sessionId: 'session-xyz',
-      status: 'completed',
-      totalDurationMs: 1200,
-      totalTokens: 500,
-      totalToolUseCount: 3,
+      session_id: 'session-xyz',
     });
 
     const { status, stderr, stdout } = runHook(payload);
@@ -155,11 +151,10 @@ describe('handler-hook binary (subprocess)', () => {
   it('exits 0 and logs "skipped: <agentId>" for an unresolvable agent (no matching source)', () => {
     // No registry written → no sources → agent cannot be attributed
     const payload = JSON.stringify({
-      agentId: 'agent-noresource',
-      agentType: 'unknown-agent',
+      agent_id: 'agent-noresource',
+      agent_type: 'unknown-agent',
       cwd: '/tmp/nowhere',
-      sessionId: 'session-xyz',
-      status: 'completed',
+      session_id: 'session-xyz',
     });
 
     const { status, stderr, stdout } = runHook(payload);
