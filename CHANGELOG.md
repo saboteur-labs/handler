@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.1.7](https://github.com/saboteur-labs/handler/compare/handler-v0.1.6...handler-v0.1.7) (2026-10-21)
+
+
+### Features
+
+* **assess:** add static definition assessment command + suppression config ([ed9ca9f](https://github.com/saboteur-labs/handler/commit/ed9ca9f9953b9167d5d9f56ce88740746b8914aa))
+* **assess:** static definition assessment + suppression config, plus scoped reset ([00d09ed](https://github.com/saboteur-labs/handler/commit/00d09eda3cd3357ae4e183c5309844186ef73e74))
+* **assess:** static definition assessment command + suppression config ([57ee3db](https://github.com/saboteur-labs/handler/commit/57ee3dbd419da921870cd14511c453433bed128e))
+* **capture:** compute run metrics from sub-transcript (task 2) ([cfdb02b](https://github.com/saboteur-labs/handler/commit/cfdb02b8877200cf35ec8bd80c685f9214184e89))
+* **capture:** parse task-notification status per agent (task 3) ([1091893](https://github.com/saboteur-labs/handler/commit/1091893efadcadf90ff169e7b6a9a9729ad75c76))
+* **capture:** read agent meta files and discover meta runs (task 4) ([1646313](https://github.com/saboteur-labs/handler/commit/1646313f5cfc884e653d2c2a485e1e196243ccf2))
+* **capture:** shared captured-run assembler (task 6) ([f38eac0](https://github.com/saboteur-labs/handler/commit/f38eac0ff499bbd3696aefd5d65f634130ca46c4))
+* **cli:** add import-runlog command (task 14) ([878c20c](https://github.com/saboteur-labs/handler/commit/878c20cc4178b29b2a5fe9c420c80cde2cd1b74f))
+* **hook:** assemble SubagentStop runs from agent_transcript_path (task 10) ([f4cc23f](https://github.com/saboteur-labs/handler/commit/f4cc23ff74de7634d5235d60d6c4aa5271f489e1))
+* **hook:** parse the real snake_case SubagentStop payload (task 9) ([e4a48d0](https://github.com/saboteur-labs/handler/commit/e4a48d0828aa511efdce83050014024528ad67ef))
+* **ingest:** add meta pass with notification status and dedup (task 7) ([374feea](https://github.com/saboteur-labs/handler/commit/374feea9ed66cf88c559dabc2fb7083fc89d4a39))
+* **reset:** add scoped `handler reset` for clearing local stores ([d88671a](https://github.com/saboteur-labs/handler/commit/d88671a7a65821eba2853e1c41ad372d9072d36b))
+* **runlog:** import runlog stops into the run store (task 13) ([54c52ba](https://github.com/saboteur-labs/handler/commit/54c52baa965245186bc7083822f8a99a11b23b43))
+* **runlog:** read and dedup SubagentStop stops from runlogs (task 12) ([136dfb3](https://github.com/saboteur-labs/handler/commit/136dfb38cd1e8c0e8e2bd5cdb48f0645c1d567e8))
+* **store:** add runlog source, precedence rule, store version 7 (task 5) ([899190b](https://github.com/saboteur-labs/handler/commit/899190b5f2f0ed59d4be289e5abcaab533e83963))
+
+
+### Bug Fixes
+
+* **assess:** resolve check-suppression config per source, not by cwd ([6bf070b](https://github.com/saboteur-labs/handler/commit/6bf070b2f2ea8e76e087174c2d4c2225d6f5f194))
+* capture subagent runs from current Claude Code data ([0791c40](https://github.com/saboteur-labs/handler/commit/0791c40319f72a286c1946ec4ecfda6f930e9316))
+* **denylist:** exclude fork, claude, and claude-code-guide built-ins (task 17) ([cca21ac](https://github.com/saboteur-labs/handler/commit/cca21ac2fa95329695c10e2a9d3ac2035f140ff5))
+* **scope:** recover trailing tools from an unbalanced-paren tools list ([2a190da](https://github.com/saboteur-labs/handler/commit/2a190dad367df245eec1d99cdeddc167e8235d74))
+* **sources:** discover agent definitions in subfolders recursively ([6a6db3d](https://github.com/saboteur-labs/handler/commit/6a6db3da86e1547be0f97fb9deaa2c93da5f7b5b))
+
+
+### Performance Improvements
+
+* **assess:** memoize fleet-global work in the static checks ([908b9e9](https://github.com/saboteur-labs/handler/commit/908b9e9b1b9c4885da33b54b77dfacd5c450e657))
+* **ingest:** skip unchanged transcripts on repeated ingest (task 18) ([f436c8f](https://github.com/saboteur-labs/handler/commit/f436c8f8995752cbdca8d98d46f764a50c6cf82f))
+
 ## [0.1.6](https://github.com/saboteur-labs/handler/compare/handler-v0.1.5...handler-v0.1.6) (2026-06-19)
 
 
