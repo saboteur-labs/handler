@@ -65,7 +65,7 @@
 **Depends on:** 2, 3, 4, 5
 **Estimate:** 5
 **Notes:** Covers FR-2, FR-5, FR-9, FR-10, FR-11 (fields), and the FR-3 consumption. Forked-skill runs need no special case. Task 3 is listed as a dependency for the status type contract only; this task does not parse notifications itself. The definition-snapshot path reuses `loadDefinitionSnapshot`. Taking `fallback` here is what lets Task 13 (`import-runlog`) reuse this without duplicating logic (FR-29).
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 7: Ingest meta pass, legacy compatibility, and dedup
 

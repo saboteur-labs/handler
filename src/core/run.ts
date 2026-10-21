@@ -135,7 +135,9 @@ export function assembleRun(
  * when the sidechain is missing (interrupted/orphan runs, or rotated history).
  * The latency distribution is derived from the parsed turns at the same time.
  */
-function readRunTelemetry(sidechainPath: string | undefined): RunTelemetrySummary | undefined {
+export function readRunTelemetry(
+  sidechainPath: string | undefined,
+): RunTelemetrySummary | undefined {
   if (sidechainPath === undefined || !existsSync(sidechainPath)) {
     return undefined;
   }
@@ -175,7 +177,10 @@ function sidechainPathFor(
  * nearest-ancestor rule; without one (a malformed entry), fall back to the
  * user-level source rather than misattributing by an assumed `cwd`.
  */
-function resolveRunIdentity(raw: RawRun, sources: readonly AgentSource[]): AgentIdentity | null {
+export function resolveRunIdentity(
+  raw: Pick<RawRun, 'agentType' | 'cwd'>,
+  sources: readonly AgentSource[],
+): AgentIdentity | null {
   if (raw.cwd !== undefined) {
     return resolveAgent(raw.agentType, raw.cwd, sources);
   }
