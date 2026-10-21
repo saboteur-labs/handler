@@ -656,6 +656,17 @@ describe('ingest — meta pass (subagent-run-capture FR-4..FR-8, FR-13..FR-16, F
     expect(r.status).toBeUndefined();
   });
 
+  it.each(['fork', 'claude', 'claude-code-guide'])(
+    'excludes a meta-discovered built-in %s run (Req 3)',
+    (builtin) => {
+      writeMetaRun('m-builtin', builtin);
+      writeMetaRun('m-user', 'alpha');
+      const runs = run();
+
+      expect(runs.map((r) => r.agentName)).toEqual(['alpha']);
+    },
+  );
+
   it('takes status from the latest notification, and leaves it unset with none', () => {
     writeMetaRun('m-1', 'alpha');
     writeMetaRun('m-2', 'beta');

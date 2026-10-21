@@ -13,6 +13,9 @@ export const BUILTIN_AGENT_NAMES: ReadonlySet<string> = new Set([
   'output-style-setup',
   'Explore',
   'Plan',
+  'fork',
+  'claude',
+  'claude-code-guide',
 ]);
 
 /**

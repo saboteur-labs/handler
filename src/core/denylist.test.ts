@@ -15,6 +15,18 @@ describe('isBuiltinAgent (Req 3)', () => {
     expect(isBuiltinAgent('Explore')).toBe(true);
   });
 
+  it('recognizes the fork, claude, and claude-code-guide built-ins', () => {
+    expect(isBuiltinAgent('fork')).toBe(true);
+    expect(isBuiltinAgent('claude')).toBe(true);
+    expect(isBuiltinAgent('claude-code-guide')).toBe(true);
+  });
+
+  it('does not match near-misses of the newer built-ins', () => {
+    expect(isBuiltinAgent('Fork')).toBe(false);
+    expect(isBuiltinAgent('fork-x')).toBe(false);
+    expect(isBuiltinAgent('claude-code')).toBe(false);
+  });
+
   it('returns false for user-authored agent names', () => {
     expect(isBuiltinAgent('code-reviewer')).toBe(false);
     expect(isBuiltinAgent('my-helper')).toBe(false);
