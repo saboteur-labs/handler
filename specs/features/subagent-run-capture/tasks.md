@@ -75,7 +75,7 @@
 **Depends on:** 3, 6
 **Estimate:** 5
 **Notes:** Covers FR-6, FR-7, FR-8, FR-13, FR-14, FR-15, FR-16 (ingest side), FR-23. Highest-risk task: it changes the first-snapshot-wins invariant in one narrow way (status and metrics only). Keep the legacy loops intact and add the meta loop below them. Notification scanning reads the same parent transcripts the legacy pass already parses; avoid reading each file twice if practical.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 8: Nested-run annotation for meta-discovered runs
 
