@@ -408,6 +408,12 @@ variable — handy for testing or non-standard setups:
 | `HANDLER_PROJECTS`    | Claude Code transcripts root (default `~/.claude/projects`).                    |
 | `ANTHROPIC_API_KEY`   | API key for the opt-in Tier C judge (no default; required for `handler judge`). |
 
+The run store is accompanied by a regenerable ingest cache, `ingest-cache.json`,
+kept in the same directory as the run store (so `HANDLER_STORE` relocates it too).
+It records each transcript's size and modification time so unchanged transcripts
+are skipped on repeated ingest. It is safe to delete; `handler reset` clears it at
+the default `derived` scope and with `--all`.
+
 ## How it works
 
 handler is built as a core library (`src/core/`) behind a thin CLI (`src/cli/`), so a
