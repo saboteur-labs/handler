@@ -1,0 +1,10 @@
+{
+  "agentType": "code-reviewer",
+  "launchedWithDefaults": false,
+  "description": "Synthetic code-reviewer task",
+  "toolUseId": "toolu_launch_reviewer",
+  "spawnDepth": 1,
+  "requestShape": "agent_tool",
+  "requestNonInteractive": false,
+  "finished": true
+}

@@ -1,0 +1,9 @@
+{
+  "agentType": "test-writer",
+  "launchedWithDefaults": false,
+  "description": "Synthetic test-writer task",
+  "toolUseId": "toolu_launch_writer",
+  "spawnDepth": 1,
+  "requestShape": "agent_tool",
+  "requestNonInteractive": false
+}

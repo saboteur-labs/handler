@@ -1,0 +1,9 @@
+{
+  "agentType": "doc-writer",
+  "launchedWithDefaults": false,
+  "description": "Synthetic doc-writer task",
+  "toolUseId": "toolu_launch_empty",
+  "spawnDepth": 1,
+  "requestShape": "agent_tool",
+  "requestNonInteractive": false
+}

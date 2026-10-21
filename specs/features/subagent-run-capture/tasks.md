@@ -15,7 +15,7 @@
 **Depends on:** none
 **Estimate:** 3
 **Notes:** Covers FR-33 (fixtures). Counts in the spec are context, not fixture content. Fixtures are the shared oracle for every later task, so keep builders small and documented. Include a test-only helper that computes expected values from the sub-transcript so later tests can use notification `<usage>` as an oracle (allowed by FR-3).
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 2: Shared sub-transcript run-metrics computation
 
