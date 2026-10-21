@@ -165,11 +165,22 @@
 **Depends on:** 8, 11, 14, 15
 **Estimate:** 1
 **Notes:** Covers FR-35 (SHOULD). Manual step run by the lead after implementation; it reads real user data, so it must not be an automated test and must not run in CI. If the count is far from the reference, report the measurement and which experiment would discriminate the cause; do not assert a cause.
-**Done:** [ ]
+**Result (2026-10-21):** Fresh ingest of the real `~/.claude/projects` into an empty temp store (a copy of the user's one registered user-level source): 1,263 runs attributed (store v7, all `source` transcript): saboteur-task-implementor 710, saboteur-spec-manager 320, saboteur-feature-orchestrator 98, saboteur-oq-triage 76, saboteur-scribe 56, fork 3 (tagged orphan). `handler list` no longer prints "No agent runs found." Status: 1,258 completed, 3 killed, 1 failed, 1 unset. 673 runs carry `parentAgentId`. Runlog reference over its window (first start 2026-09-14): 1,184 saboteur-\* SubagentStarts, 1,181 present in the store; of the 3 absent, 1 started after the store was written and 2 have no sub-transcript on disk. The 3 `fork` runs are a built-in agent that the denylist did not cover; addressed by Task 17.
+**Done:** [x]
+
+### Task 17: Extend the built-in denylist
+
+**What:** Add `fork`, `claude`, and `claude-code-guide` to the built-in agent denylist so built-in runs are excluded on every capture path.
+**Files:** `src/core/denylist.ts`, `src/core/denylist.test.ts`, `src/core/ingest.test.ts`.
+**Done when:** tests fail first, then pass, and a fresh ingest stores no `fork` run: `denylist.test.ts` asserts `fork`, `claude`, and `claude-code-guide` are treated as built-in; `ingest.test.ts` has a test showing the meta-discovery ingest path excludes a run whose agent type is `fork`; existing denylist and ingest tests stay green.
+**Depends on:** 7
+**Estimate:** 1
+**Notes:** Follows from the Task 16 measurement of 3 `fork` runs stored as orphans. Test-only beyond the one list edit in `src/core/denylist.ts`. The tick for this task is left to the lead after re-running the fresh ingest.
+**Done:** [x]
 
 ## Summary
 
-- Total tasks: 16
-- Total estimated effort: 48 story points
+- Total tasks: 17
+- Total estimated effort: 49 story points
 - Critical path: Tasks 1 → 2 → 6 → 13 → 14 → 16
-- Risks: Task 7 (alters the first-snapshot-wins invariant and merges two discovery paths; most regression surface). Task 2 (the legacy tool-name to `toolStats` category mapping cannot be verified from the repo, only the 7 legacy key names could). Task 6 (single shared assembler that three consumers depend on). Task 16 (depends on the real data state; manual). Parallel waves after Task 1: {2, 3, 4, 5, 9}; then {6, 12}; then {7, 10, 13}; then {8, 11, 14, 15}; then 16.
+- Risks: Task 7 (alters the first-snapshot-wins invariant and merges two discovery paths; most regression surface). Task 2 (the legacy tool-name to `toolStats` category mapping cannot be verified from the repo, only the 7 legacy key names could). Task 6 (single shared assembler that three consumers depend on). Task 16 (depends on the real data state; manual). Parallel waves after Task 1: {2, 3, 4, 5, 9}; then {6, 12}; then {7, 10, 13}; then {8, 11, 14, 15, 17}; then 16.
