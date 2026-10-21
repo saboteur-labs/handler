@@ -145,7 +145,7 @@
 **Depends on:** 13
 **Estimate:** 3
 **Notes:** Covers FR-25 (CLI override surface), FR-31 (exit code), FR-32 (SHOULD). Follow `src/cli/commands/reset.ts` style (`registerXCommand(program, ctx)`). The CLAUDE.md architecture update is out of scope (a later documentation stage). `src/cli/index.ts` is shared; this is the only task that edits it.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 15: Cross-path integration and precedence tests
 

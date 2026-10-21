@@ -308,6 +308,24 @@ and everything works with the hook disabled.
 
 Both commands only print text — they never edit your settings for you.
 
+### `handler import-runlog`
+
+Import subagent runs from Claude Code's runlogs (default `~/.claude/runlogs`)
+into the run store, attributed against your registered sources like any other
+run. It prints how many runs were imported, how many stops were skipped for an
+empty `agent_type`, and how many lines were skipped as malformed. Malformed
+lines never fail the command; it exits 0.
+
+Flags:
+
+- `--root <dir>` — read runlogs from `<dir>` instead of `~/.claude/runlogs`
+  (point it at the runlogs directory itself).
+
+Limitation: the run store is a regenerable cache. A later handler version bump,
+or `handler reset` at the default `derived` scope, drops runlog-imported runs.
+They return only by re-running `handler import-runlog` while the runlogs still
+exist.
+
 ### `handler judge <agent> <runId>`
 
 Invoke the Tier C LLM judge on a single run (opt-in). It prints a pre-flight
