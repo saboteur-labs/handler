@@ -1,6 +1,6 @@
 # Task List: Subagent run capture (restoring attribution)
 
-**Feature source:** `specs/features/subagent-run-capture.md` (FR-1 to FR-35)
+**Feature source:** `specs/features/subagent-run-capture.md` (FR-1 to FR-36)
 **Estimation unit:** story points (1/2/3/5/8)
 **Approach:** TDD per CLAUDE.md. Each task writes the failing test first, then the minimum code, then refactors. Core logic in `src/core/`, CLI thin in `src/cli/`. Named exports, explicit return types, kebab-case files. Persistence only through `src/core/store/json-store.ts`. Check with `npx vitest run <file>`, `npm test`, `npm run typecheck`, `npm run lint`.
 **Parallelism:** tasks with no dependency between them touch disjoint files so they can run concurrently in isolated worktrees. Tasks that share a file (`src/core/run.ts`, `src/core/ingest.ts`, `src/core/index.ts` (Task 13 only), `src/cli/index.ts`) are ordered by dependency.
@@ -178,9 +178,19 @@
 **Notes:** Follows from the Task 16 measurement of 3 `fork` runs stored as orphans. Test-only beyond the one list edit in `src/core/denylist.ts`. The tick for this task is left to the lead after re-running the fresh ingest.
 **Done:** [x]
 
+### Task 18: Incremental ingest
+
+**What:** Make repeated ingest skip unchanged sub-transcripts and unchanged parent session transcripts using a regenerable extraction cache, and read each sub-transcript once per assembly.
+**Files:** `src/core/ingest.ts`, `src/core/capture-run.ts`, `src/core/run.ts` (optional sidechain size/mtime fields), `src/core/store/ingest-cache.ts` (new), `src/core/reset.ts`, and their tests (`src/core/ingest.test.ts`, `src/core/capture-run.test.ts`, `src/core/store/ingest-cache.test.ts`, `src/core/reset.test.ts`).
+**Done when:** tests fail first, then pass: a test counting file reads shows a second ingest over unchanged fixtures reads no sub-transcript and parses no parent transcript; a test shows incremental and full (empty-store) ingest produce identical stores, including after a parent gains a newer notification (status update applies) and after a sub-transcript grows (re-read and re-assembled); a run assembly reads its sub-transcript once; the cache is stored beside the run store and a wrong-version or corrupt cache degrades to empty; `reset` at the default `derived` scope clears the cache; existing ingest and reset tests stay green; the lead records warm `handler list` time before and after on the same store copy.
+**Depends on:** 7, 17
+**Estimate:** 3
+**Notes:** Covers FR-36. Motivating measurement is in the spec (warm `handler list` 13.2-18.4 s). Persist the cache only through `src/core/store/json-store.ts`. The before/after timing is a manual step by the lead and is not an automated test; report the measurement without asserting a cause beyond what the profile shows.
+**Done:** [x]
+
 ## Summary
 
-- Total tasks: 17
-- Total estimated effort: 49 story points
+- Total tasks: 18
+- Total estimated effort: 52 story points
 - Critical path: Tasks 1 → 2 → 6 → 13 → 14 → 16
-- Risks: Task 7 (alters the first-snapshot-wins invariant and merges two discovery paths; most regression surface). Task 2 (the legacy tool-name to `toolStats` category mapping cannot be verified from the repo, only the 7 legacy key names could). Task 6 (single shared assembler that three consumers depend on). Task 16 (depends on the real data state; manual). Parallel waves after Task 1: {2, 3, 4, 5, 9}; then {6, 12}; then {7, 10, 13}; then {8, 11, 14, 15, 17}; then 16.
+- Risks: Task 7 (alters the first-snapshot-wins invariant and merges two discovery paths; most regression surface). Task 2 (the legacy tool-name to `toolStats` category mapping cannot be verified from the repo, only the 7 legacy key names could). Task 6 (single shared assembler that three consumers depend on). Task 16 (depends on the real data state; manual). Parallel waves after Task 1: {2, 3, 4, 5, 9}; then {6, 12}; then {7, 10, 13}; then {8, 11, 14, 15, 17}; then {16, 18}.

@@ -68,10 +68,13 @@ Handler attributes a subagent run only when the parent session's `Task` result c
 33. FR-33: Test fixtures MUST include a real-shaped meta.json, an `async_launched` result, a snake_case SubagentStop payload, and a runlog envelope, and tests for FR-1 to FR-31 MUST use them. [US-6]
 34. FR-34: Existing tests that encode the assumed camelCase hook payload MUST be replaced or supplemented by the real-shape fixtures. [US-6]
 35. FR-35: Acceptance check: a fresh ingest of the user's current `~/.claude/projects` into an empty store SHOULD attribute a run count on the order of the 1,164 user-authored runs the runlog shows. Exact equality is not required. [US-1]
+36. FR-36: Incremental ingest: a repeated ingest MUST NOT re-read a sub-transcript whose size and modification time are unchanged since the stored transcript record was assembled, and MUST NOT re-parse a parent session transcript whose size and modification time are unchanged since its notification statuses and legacy run summaries were last extracted. The store contents after an incremental ingest MUST equal those of a full ingest into an empty store over the same files; status updates from newer notifications still apply. When a run is assembled, its sub-transcript SHOULD be read once. The extraction cache is a regenerable cache stored beside the run store and is cleared by `handler reset` at the default `derived` scope. [US-1]
+
+> Note (measurement only): warm `handler list` over 1.5 GB / 1,383 JSONL files took 13.2-18.4 s; of a 13.3 s profile, 12.3 s was in JSONL reading and 7.4 s was in per-run assembly, which reads each sub-transcript three times. FR-36 was added after Gate 6 at user direction, 2026-10-21.
 
 ## Open questions
 
-None — all resolved at Gate 3 (2026-10-21).
+None — all resolved at Gate 3 (2026-10-21). FR-36 was added after Gate 6 at user direction (2026-10-21) and raised no open questions.
 
 ## Out of scope (deferred)
 
