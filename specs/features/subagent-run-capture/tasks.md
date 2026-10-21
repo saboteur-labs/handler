@@ -95,7 +95,7 @@
 **Depends on:** 1
 **Estimate:** 2
 **Notes:** Covers FR-17 and FR-34 (parser tests). `HookPayload` is no longer structurally a `RawRun`; Task 10 adapts the handler. The `import-runlog` reader (Task 12) reuses this parser, so export it with a stable shape.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 10: Hook handler on the real payload
 

@@ -10,7 +10,7 @@
 import { assembleRun } from '../run';
 import type { AgentSource } from '../sources/source';
 import type { RunStore } from '../store/run-store';
-import { parseHookPayload } from './payload';
+import type { ToolStats } from '../transcripts/extract';
 
 /** Outcome of a single hook invocation. */
 export type HandleResult = 'captured' | 'skipped' | 'malformed';
@@ -32,7 +32,7 @@ export function handleSubagentStop(
   store: RunStore,
 ): HandleResult {
   try {
-    const parsed = parseHookPayload(payload);
+    const parsed = parseLegacyHookPayload(payload);
     if (parsed === null) {
       return 'malformed';
     }
@@ -55,4 +55,78 @@ export function handleSubagentStop(
   } catch {
     return 'malformed';
   }
+}
+
+/**
+ * Interim shim (Task 9): the camelCase, status-requiring payload the handler
+ * accepted before `parseHookPayload` moved to the real snake_case payload.
+ * Structurally a `RawRun`. Task 10 replaces this with the new parser.
+ */
+interface LegacyHookPayload {
+  readonly agentId: string;
+  readonly agentType: string;
+  readonly cwd: string;
+  readonly sessionId: string;
+  readonly status: string;
+  readonly totalDurationMs: number | undefined;
+  readonly totalTokens: number | undefined;
+  readonly totalToolUseCount: number | undefined;
+  readonly toolStats: ToolStats | undefined;
+  readonly timestamp: string | undefined;
+  readonly incomplete: boolean;
+}
+
+function parseLegacyHookPayload(raw: unknown): LegacyHookPayload | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const { agentId, agentType, cwd, sessionId, status } = raw;
+  if (
+    !isNonEmptyString(agentId) ||
+    !isNonEmptyString(agentType) ||
+    !isNonEmptyString(cwd) ||
+    !isNonEmptyString(sessionId) ||
+    !isNonEmptyString(status)
+  ) {
+    return null;
+  }
+  return {
+    agentId,
+    agentType,
+    cwd,
+    sessionId,
+    status,
+    totalDurationMs: asFiniteNumber(raw.totalDurationMs),
+    totalTokens: asFiniteNumber(raw.totalTokens),
+    totalToolUseCount: asFiniteNumber(raw.totalToolUseCount),
+    toolStats: asToolStats(raw.toolStats),
+    timestamp: isNonEmptyString(raw.timestamp) ? raw.timestamp : undefined,
+    incomplete: typeof raw.incomplete === 'boolean' ? raw.incomplete : false,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function asFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function asToolStats(value: unknown): ToolStats | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const stats: Record<string, number> = {};
+  for (const [key, n] of Object.entries(value)) {
+    const v = asFiniteNumber(n);
+    if (v !== undefined) {
+      stats[key] = v;
+    }
+  }
+  return stats;
 }
