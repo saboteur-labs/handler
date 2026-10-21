@@ -115,7 +115,7 @@
 **Depends on:** 9, 10
 **Estimate:** 2
 **Notes:** Covers FR-20, FR-21, FR-34 (CLI tests). Keep the entrypoint thin; logic stays in core. The `parseJsonInput` export stays.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 12: Runlog reader (scan, unwrap, dedup, skip counts)
 

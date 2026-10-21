@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { buildSubagentStopPayload } from '../core/__fixtures__/capture/fixtures';
 import { parseJsonInput } from './hook-handler';
 
 // ---------------------------------------------------------------------------
@@ -21,14 +22,13 @@ import { parseJsonInput } from './hook-handler';
 describe('parseJsonInput', () => {
   it('returns parsed object for valid JSON object', () => {
     const result = parseJsonInput(
-      '{"agentId":"agent-abc","agentType":"my-agent","cwd":"/tmp","sessionId":"s1","status":"completed"}',
+      '{"agent_id":"agent-abc","agent_type":"my-agent","cwd":"/tmp","session_id":"s1"}',
     );
     expect(result).toEqual({
-      agentId: 'agent-abc',
-      agentType: 'my-agent',
+      agent_id: 'agent-abc',
+      agent_type: 'my-agent',
       cwd: '/tmp',
-      sessionId: 's1',
-      status: 'completed',
+      session_id: 's1',
     });
   });
 
@@ -106,7 +106,7 @@ describe('handler-hook binary (subprocess)', () => {
     };
   }
 
-  it('exits 0 and logs "captured: <agentId>" for a valid captured payload', () => {
+  it('exits 0 and logs "captured: <agent_id>" for a valid captured payload', () => {
     // Register the repo source first by writing a minimal registry.
     // SourceRegistry stores sources as { type, root } (not { type, path }).
     writeFileSync(
@@ -118,12 +118,14 @@ describe('handler-hook binary (subprocess)', () => {
       'utf8',
     );
 
-    const payload = JSON.stringify({
-      agent_id: 'agent-abc123',
-      agent_type: 'my-agent',
-      cwd: repo,
-      session_id: 'session-xyz',
-    });
+    const payload = JSON.stringify(
+      buildSubagentStopPayload({
+        agentId: 'agent-abc123',
+        agentType: 'my-agent',
+        agentTranscriptPath: join(dir, 'agent-abc123.jsonl'),
+        cwd: repo,
+      }),
+    );
 
     const { status, stderr, stdout } = runHook(payload);
 
@@ -148,19 +150,72 @@ describe('handler-hook binary (subprocess)', () => {
     expect(stdout).toBe('');
   });
 
-  it('exits 0 and logs "skipped: <agentId>" for an unresolvable agent (no matching source)', () => {
+  it('exits 0 and logs "skipped: <agent_id>" for an unresolvable agent (no matching source)', () => {
     // No registry written → no sources → agent cannot be attributed
-    const payload = JSON.stringify({
-      agent_id: 'agent-noresource',
-      agent_type: 'unknown-agent',
-      cwd: '/tmp/nowhere',
-      session_id: 'session-xyz',
-    });
+    const payload = JSON.stringify(
+      buildSubagentStopPayload({
+        agentId: 'agent-noresource',
+        agentType: 'unknown-agent',
+        agentTranscriptPath: join(dir, 'agent-noresource.jsonl'),
+        cwd: '/tmp/nowhere',
+      }),
+    );
 
     const { status, stderr, stdout } = runHook(payload);
 
     expect(status).toBe(0);
     expect(stderr.trim()).toBe('skipped: agent-noresource');
+    expect(stdout).toBe('');
+  });
+  it('exits 0 and logs "skipped: <agent_id>" for an empty agent_type', () => {
+    const payload = JSON.stringify(
+      buildSubagentStopPayload({
+        agentId: 'agent-empty-type',
+        agentType: '',
+        agentTranscriptPath: join(dir, 'agent-empty-type.jsonl'),
+        cwd: repo,
+      }),
+    );
+
+    const { status, stderr, stdout } = runHook(payload);
+
+    expect(status).toBe(0);
+    expect(stderr.trim()).toBe('skipped: agent-empty-type');
+    expect(stdout).toBe('');
+  });
+
+  it.each([['[]'], ['"a string"'], ['42'], ['null']])(
+    'exits 0 and logs "malformed: unknown" for non-object JSON %s',
+    (raw) => {
+      const { status, stderr, stdout } = runHook(raw);
+
+      expect(status).toBe(0);
+      expect(stderr.trim()).toBe('malformed: unknown');
+      expect(stdout).toBe('');
+    },
+  );
+
+  it('exits 0 with an "error: <message>" line and no stdout when the store fails', () => {
+    writeFileSync(
+      registryPath,
+      JSON.stringify({ version: 1, sources: [{ type: 'repo', root: repo }] }),
+      'utf8',
+    );
+    // A directory where the store file should be makes the write fail.
+    mkdirSync(storePath, { recursive: true });
+    const payload = JSON.stringify(
+      buildSubagentStopPayload({
+        agentId: 'agent-store-fail',
+        agentType: 'my-agent',
+        agentTranscriptPath: join(dir, 'agent-store-fail.jsonl'),
+        cwd: repo,
+      }),
+    );
+
+    const { status, stderr, stdout } = runHook(payload);
+
+    expect(status).toBe(0);
+    expect(stderr.trim()).toMatch(/^error: .+/);
     expect(stdout).toBe('');
   });
 });

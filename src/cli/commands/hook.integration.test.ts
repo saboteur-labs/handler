@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { buildSubagentStopPayload } from '../../core/__fixtures__/capture/fixtures';
 import { handleSubagentStop } from '../../core/hook/handler';
 import { ingest } from '../../core/ingest';
 import { repoSource } from '../../core/sources/source';
@@ -251,6 +252,32 @@ describe('hook integration: SubagentStop round-trip', () => {
     handleSubagentStop(payload, sources, store);
     handleSubagentStop(payload, sources, store);
 
+    expect(store.list()).toHaveLength(1);
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. real-shape (Claude Code snake_case) payload
+  // -------------------------------------------------------------------------
+  it('real-shape payload: captured from the full snake_case fixture; empty agent_type skipped', () => {
+    const sources = [repoSource(repoRoot)];
+    const store = new RunStore(storePath);
+    const real = buildSubagentStopPayload({
+      agentId: 'agent-real-1',
+      agentType: AGENT_NAME,
+      agentTranscriptPath: join(repoRoot, 'agent-real-1.jsonl'),
+      cwd: repoRoot,
+    });
+
+    expect(handleSubagentStop(real, sources, store)).toBe('captured');
+    expect(store.list()).toHaveLength(1);
+
+    const empty = buildSubagentStopPayload({
+      agentId: 'agent-real-2',
+      agentType: '',
+      agentTranscriptPath: join(repoRoot, 'agent-real-2.jsonl'),
+      cwd: repoRoot,
+    });
+    expect(handleSubagentStop(empty, sources, store)).toBe('skipped');
     expect(store.list()).toHaveLength(1);
   });
 });
