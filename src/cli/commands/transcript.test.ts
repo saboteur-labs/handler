@@ -527,11 +527,15 @@ describe('handler CLI: transcript command (Reqs 48–52)', () => {
     const code = await invoke(['transcript', 'reviewer', 'agent-1']);
     expect(code).toBe(0);
 
-    // Only the run store (sources.json + runs.json) may be written during ingest;
+    // Only the run store and its ingest cache (sources.json + runs.json + ingest-cache.json) may be written during ingest;
     // no new store files (scores, notes, etc.) should be written by transcript command.
     const filesAfter = readdirSync(dir);
     const newFiles = filesAfter.filter(
-      (f) => !filesBefore.some((b) => b.name === f) && f !== 'runs.json' && f !== 'sources.json',
+      (f) =>
+        !filesBefore.some((b) => b.name === f) &&
+        f !== 'runs.json' &&
+        f !== 'ingest-cache.json' &&
+        f !== 'sources.json',
     );
     expect(newFiles).toHaveLength(0);
   });

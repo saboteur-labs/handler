@@ -13,6 +13,7 @@ describe('core: reset', () => {
   /** Every store the reset knows about, seeded with a marker file. */
   const FILES: readonly ResetTargetKey[] = [
     'runs',
+    'ingestCache',
     'scores',
     'tierB',
     'tierC',
@@ -49,7 +50,7 @@ describe('core: reset', () => {
     });
 
     it('scopes "derived" to the run cache plus the score annotations', () => {
-      expect(keysFor('derived')).toEqual(['runs', 'scores', 'tierB']);
+      expect(keysFor('derived')).toEqual(['ingestCache', 'runs', 'scores', 'tierB']);
     });
 
     it('scopes "all" to every known store', () => {
@@ -62,6 +63,7 @@ describe('core: reset', () => {
 
       expect(derived).toMatchObject({
         runs: true,
+        ingestCache: true,
         scores: true,
         tierB: true,
         tierC: false,
@@ -101,8 +103,9 @@ describe('core: reset', () => {
     it('deletes exactly the planned targets and leaves the rest', () => {
       const outcome = executeReset(planReset({ scope: 'derived', paths }));
 
-      expect([...outcome.deleted].sort()).toEqual(['runs', 'scores', 'tierB']);
+      expect([...outcome.deleted].sort()).toEqual(['ingestCache', 'runs', 'scores', 'tierB']);
       expect(existsSync(paths.runs)).toBe(false);
+      expect(existsSync(paths.ingestCache)).toBe(false);
       expect(existsSync(paths.scores)).toBe(false);
       expect(existsSync(paths.tierB)).toBe(false);
       expect(existsSync(paths.notes)).toBe(true);

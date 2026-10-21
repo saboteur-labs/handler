@@ -112,14 +112,23 @@ export function computeRunMetrics(sidechainPath: string): RunMetricsResult {
   } catch {
     return NO_DATA;
   }
+  return computeRunMetricsFromEntries(entries);
+}
 
+/**
+ * The same computation over already-parsed entries, so a caller that has read
+ * the sub-transcript once (FR-36) need not read it again. `computeRunMetrics`
+ * delegates here, keeping every capture path on one shared computation (FR-3).
+ */
+export function computeRunMetricsFromEntries(entries: readonly unknown[]): RunMetricsResult {
   const stamps: number[] = [];
   const toolStats = emptyToolStats();
   let totalToolUseCount = 0;
   let totalTokens = 0;
 
-  for (const entry of entries) {
-    if (typeof entry !== 'object' || entry === null) continue;
+  for (const raw of entries) {
+    if (typeof raw !== 'object' || raw === null) continue;
+    const entry = raw as RawEntry;
     if (typeof entry.timestamp === 'string') {
       const t = Date.parse(entry.timestamp);
       if (!Number.isNaN(t)) stamps.push(t);

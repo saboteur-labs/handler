@@ -71,6 +71,17 @@ describe('handler CLI: reset', () => {
       out: (line) => out.push(line),
     });
 
+  it('also removes the ingest cache sitting beside the run store (FR-36)', async () => {
+    const cachePath = join(dir, 'ingest-cache.json');
+    writeFileSync(cachePath, '{}\n', 'utf8');
+
+    const code = await invoke(['--yes']);
+
+    expect(code).toBe(0);
+    expect(existsSync(cachePath)).toBe(false);
+    expect(out.join('\n')).toContain('ingest-cache.json');
+  });
+
   it('clears the derived stores by default, keeping authored state', async () => {
     const code = await invoke(['--yes']);
 

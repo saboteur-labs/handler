@@ -20,6 +20,7 @@ import { defaultUserConfigPath } from './assess/config-store';
 import { defaultConventionsPath } from './conventions/conventions-store';
 import { defaultRegistryPath } from './sources/registry';
 import { defaultAnchorsPath } from './store/anchor-store';
+import { defaultIngestCachePath } from './store/ingest-cache';
 import { defaultNotePath } from './store/note-store';
 import { defaultRunStorePath } from './store/run-store';
 import { defaultScoreStorePath } from './store/score-store';
@@ -29,6 +30,7 @@ import { defaultTierCStorePath } from './store/tier-c-store';
 /** Identifiers for the stores reset can remove. */
 export type ResetTargetKey =
   | 'runs'
+  | 'ingestCache'
   | 'scores'
   | 'tierB'
   | 'tierC'
@@ -132,6 +134,13 @@ const SPECS: readonly TargetSpec[] = [
     label: 'attributed run history (re-ingested from transcripts)',
     derived: true,
     defaultPath: defaultRunStorePath,
+    scope: 'derived',
+  },
+  {
+    key: 'ingestCache',
+    label: 'ingest extraction cache (rebuilt on the next read)',
+    derived: true,
+    defaultPath: defaultIngestCachePath,
     scope: 'derived',
   },
   {

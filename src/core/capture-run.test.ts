@@ -1,10 +1,11 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { assembleCapturedRun, type CaptureInput } from './capture-run';
 import { repoSource, userSource } from './sources/source';
+import * as jsonl from './transcripts/jsonl';
 
 describe('assembleCapturedRun', () => {
   let root: string;
@@ -72,6 +73,20 @@ describe('assembleCapturedRun', () => {
     expect(run!.runId).toBe('agent-1');
     expect(run!.sidechainPath).toBe(path);
     expect(run!.telemetry).toBeDefined();
+  });
+
+  it('reads the sub-transcript exactly once per assembly (FR-36)', () => {
+    writeAgent(root, 'reviewer', 'def');
+    const path = writeSidechain('once.jsonl', { cwd: root, sessionId: 'sess-x' });
+    const spy = vi.spyOn(jsonl, 'readJsonl');
+    try {
+      const run = assembleCapturedRun(input({ sidechainPath: path }), [repoSource(root)]);
+      expect(run!.telemetry).toBeDefined();
+      expect(run!.totalToolUseCount).toBe(1);
+      expect(spy.mock.calls.filter((c) => c[0] === path)).toHaveLength(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('uses fallback values only when the sub-transcript lacks them', () => {

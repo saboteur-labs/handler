@@ -17,9 +17,10 @@ import { loadDefinitionSnapshot } from './snapshot';
 import { resolveAgent } from './resolve';
 import type { AgentSource } from './sources/source';
 import type { RawRun, ToolStats } from './transcripts/extract';
+import { readJsonl } from './transcripts/jsonl';
 import {
   latencyDistribution,
-  readTelemetry,
+  telemetryFromEntries,
   type LatencyDistribution,
   type RunTelemetry,
 } from './transcripts/telemetry';
@@ -68,6 +69,14 @@ export interface Run {
    * `undefined` for records written before this field was introduced.
    */
   readonly source?: 'hook' | 'transcript' | 'runlog';
+  /**
+   * Size in bytes and `mtimeMs` of the sub-transcript when this record was last
+   * assembled from it. Ingest skips re-assembling a run whose sub-transcript
+   * still has this size and mtime (FR-36). Optional: records written before the
+   * fields existed are simply reassembled once.
+   */
+  readonly sidechainSize?: number;
+  readonly sidechainMtimeMs?: number;
   /** Nesting depth of a meta-discovered run (1 = top-level subagent); optional. */
   readonly spawnDepth?: number;
   /**
@@ -84,12 +93,15 @@ export interface Run {
  *
  * When processing a sidechain file, pass `parentAgentId` (extracted from the
  * sidechain filename) so the returned `Run` records the nesting relationship.
+ * `skipTelemetry` omits the sub-transcript read when the caller already knows the
+ * stored record is current (FR-36).
  */
 export function assembleRun(
   raw: RawRun,
   sources: readonly AgentSource[],
   transcriptPath: string,
   parentAgentId?: string,
+  options: { readonly skipTelemetry?: boolean } = {},
 ): Run | null {
   const identity = resolveRunIdentity(raw, sources);
   if (identity === null) {
@@ -125,7 +137,7 @@ export function assembleRun(
     toolStats: raw.toolStats,
     definitionSnapshot,
     tags,
-    telemetry: readRunTelemetry(sidechainPath),
+    telemetry: options.skipTelemetry === true ? undefined : readRunTelemetry(sidechainPath),
     parentAgentId,
   };
 }
@@ -141,7 +153,12 @@ export function readRunTelemetry(
   if (sidechainPath === undefined || !existsSync(sidechainPath)) {
     return undefined;
   }
-  const telemetry = readTelemetry(sidechainPath);
+  return summarizeTelemetry(readJsonl(sidechainPath));
+}
+
+/** The persisted telemetry summary derived from already-parsed sub-transcript entries. */
+export function summarizeTelemetry(entries: readonly unknown[]): RunTelemetrySummary {
+  const telemetry = telemetryFromEntries(entries);
   return { ...telemetry, latency: latencyDistribution(telemetry.turns) };
 }
 
@@ -158,7 +175,7 @@ export function readRunTelemetry(
  * return `undefined` to let scoring distinguish a locatable run from one it
  * cannot reach.
  */
-function sidechainPathFor(
+export function sidechainPathFor(
   raw: RawRun,
   transcriptPath: string,
   parentAgentId: string | undefined,

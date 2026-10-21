@@ -10,15 +10,17 @@
  * This layer is pure wiring: every decision (what counts as a run, how it is
  * attributed, what is dropped) lives in the modules it composes.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 
-import { assembleCapturedRun } from './capture-run';
-import { assembleRun, type Run } from './run';
+import { assembleCapturedRun, transcriptFactsFromEntries } from './capture-run';
+import { identityKey } from './identity';
+import { assembleRun, resolveRunIdentity, sidechainPathFor, type Run } from './run';
 import type { AgentSource } from './sources/source';
+import { IngestCache, ingestCachePathFor, type CachedFile } from './store/ingest-cache';
 import { canOverwrite } from './store/precedence';
 import { RunStore } from './store/run-store';
 import { discoverMetaRuns, discoverSidechains, discoverTranscripts } from './transcripts/discover';
-import { extractRuns } from './transcripts/extract';
+import { extractRuns, type RawRun } from './transcripts/extract';
 import { readJsonl } from './transcripts/jsonl';
 import { latestStatusByAgentId } from './transcripts/notifications';
 import { parseSidechainParentAgentId } from './transcripts/sidechain';
@@ -42,20 +44,77 @@ function isLegacyComplete(run: Run): boolean {
   );
 }
 
+interface FileStat {
+  readonly size: number;
+  readonly mtimeMs: number;
+}
+
+function statOf(path: string): FileStat | undefined {
+  try {
+    const st = statSync(path);
+    return st.isFile() ? { size: st.size, mtimeMs: st.mtimeMs } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function withStat(run: Run, st: FileStat | undefined): Run {
+  return st === undefined ? run : { ...run, sidechainSize: st.size, sidechainMtimeMs: st.mtimeMs };
+}
+
+/**
+ * True when `existing` was assembled from this very sub-transcript as it still
+ * is on disk (FR-36). Only a `transcript`-source record qualifies: a hook or
+ * runlog record must be re-assembled so it can upgrade to transcript.
+ */
+function isUnchanged(
+  existing: Run | undefined,
+  sidechainPath: string | undefined,
+  st: FileStat | undefined,
+): existing is Run {
+  return (
+    existing !== undefined &&
+    existing.source === 'transcript' &&
+    sidechainPath !== undefined &&
+    st !== undefined &&
+    existing.sidechainPath === sidechainPath &&
+    existing.sidechainSize === st.size &&
+    existing.sidechainMtimeMs === st.mtimeMs
+  );
+}
+
+/** The raw summary carries every field a complete legacy run needs. */
+function isRawComplete(raw: RawRun): boolean {
+  return (
+    raw.status !== undefined &&
+    raw.totalDurationMs !== undefined &&
+    raw.totalTokens !== undefined &&
+    raw.totalToolUseCount !== undefined
+  );
+}
+
 /**
  * Merge a meta-discovered run into the legacy run for the same agent (FR-15).
  * A complete legacy result supplies everything and meta adds only the lineage
  * fields it lacks. An incomplete one keeps what it has and meta fills the gaps;
  * the legacy definition snapshot always stays.
  */
+function mergeCompleteLegacy(legacy: Run, meta: Pick<Run, 'parentAgentId' | 'spawnDepth'>): Run {
+  return {
+    ...legacy,
+    parentAgentId: legacy.parentAgentId ?? meta.parentAgentId,
+    spawnDepth: legacy.spawnDepth ?? meta.spawnDepth,
+  };
+}
+
 function mergeLegacyWithMeta(legacy: Run, meta: Run): Run {
+  if (isLegacyComplete(legacy)) {
+    return mergeCompleteLegacy(legacy, meta);
+  }
   const lineage = {
     parentAgentId: legacy.parentAgentId ?? meta.parentAgentId,
     spawnDepth: legacy.spawnDepth ?? meta.spawnDepth,
   };
-  if (isLegacyComplete(legacy)) {
-    return { ...legacy, ...lineage };
-  }
   const legacyLocatorOk = legacy.sidechainPath !== undefined && existsSync(legacy.sidechainPath);
   return {
     ...legacy,
@@ -96,6 +155,13 @@ function mergeLegacyWithMeta(legacy: Run, meta: Run): Run {
  */
 export function ingest(options: IngestOptions): Run[] {
   const store = new RunStore(options.storePath);
+  return store.batch(() => ingestInto(store, options));
+}
+
+function ingestInto(store: RunStore, options: IngestOptions): Run[] {
+  // Regenerable per-file extraction cache, beside the run store (FR-36).
+  const cache = new IngestCache(ingestCachePathFor(options.storePath));
+  const discoveredPaths = new Set<string>();
   // In-process dedup: tracks agentIds seen within this single ingest call.
   // Prevents calling assembleRun or store.upsert more than once for the same
   // agentId when it appears in both a top-level transcript and a sidechain.
@@ -108,10 +174,54 @@ export function ingest(options: IngestOptions): Run[] {
   // legacy pass already parses so no file is read twice.
   const notificationStatus = new Map<string, string>();
 
-  function collectNotifications(entries: readonly unknown[]): void {
-    for (const [agentId, status] of latestStatusByAgentId(entries)) {
+  /**
+   * What ingest extracts from one transcript file: reused from the cache while
+   * the file's size and mtime are unchanged, otherwise parsed once and cached.
+   * Sidechain files also record their first cwd/sessionId/timestamp facts.
+   */
+  function extraction(path: string, sidechain: boolean): CachedFile {
+    discoveredPaths.add(path);
+    const st = statOf(path);
+    if (st !== undefined) {
+      const hit = cache.get(path, st.size, st.mtimeMs);
+      if (hit !== undefined && (!sidechain || hit.facts !== undefined)) return hit;
+    }
+    const entries = readJsonl(path);
+    const fresh: CachedFile = {
+      size: st?.size ?? -1,
+      mtimeMs: st?.mtimeMs ?? -1,
+      statuses: [...latestStatusByAgentId(entries)],
+      runs: extractRuns(entries),
+      ...(sidechain && { facts: transcriptFactsFromEntries(entries) }),
+    };
+    if (st !== undefined) cache.set(path, fresh);
+    return fresh;
+  }
+
+  function collectNotifications(file: CachedFile): void {
+    for (const [agentId, status] of file.statuses) {
       notificationStatus.set(agentId, status);
     }
+  }
+
+  /**
+   * `assembleRun` for a legacy run, skipping the sub-transcript read when the
+   * stored transcript record already reflects the unchanged file. Limited to
+   * complete summaries so an incomplete legacy run keeps its telemetry for the
+   * meta merge.
+   */
+  function assembleLegacy(raw: RawRun, transcriptPath: string, parentAgentId?: string): Run | null {
+    const identity = resolveRunIdentity(raw, options.sources);
+    if (identity === null) return null;
+    const sidechainPath = sidechainPathFor(raw, transcriptPath, parentAgentId);
+    const st = sidechainPath === undefined ? undefined : statOf(sidechainPath);
+    const skip =
+      isRawComplete(raw) &&
+      isUnchanged(store.forRun(identityKey(identity), raw.agentId), sidechainPath, st);
+    const run = assembleRun(raw, options.sources, transcriptPath, parentAgentId, {
+      skipTelemetry: skip,
+    });
+    return run === null ? null : withStat(run, st);
   }
 
   /**
@@ -158,6 +268,11 @@ export function ingest(options: IngestOptions): Run[] {
       parentAgentId: run.parentAgentId ?? existing.parentAgentId,
       spawnDepth: run.spawnDepth ?? existing.spawnDepth,
       tags,
+      telemetry: run.telemetry ?? existing.telemetry,
+      ...((healed || run.sidechainPath === existing.sidechainPath) && {
+        sidechainSize: run.sidechainSize ?? existing.sidechainSize,
+        sidechainMtimeMs: run.sidechainMtimeMs ?? existing.sidechainMtimeMs,
+      }),
       ...(healed && { sidechainPath: run.sidechainPath, telemetry: run.telemetry }),
     };
     if (JSON.stringify(updated) !== JSON.stringify(existing)) {
@@ -166,12 +281,12 @@ export function ingest(options: IngestOptions): Run[] {
   }
 
   for (const transcript of discoverTranscripts(options.projectsRoot)) {
-    const entries = readJsonl(transcript);
-    collectNotifications(entries);
-    for (const raw of extractRuns(entries)) {
+    const file = extraction(transcript, false);
+    collectNotifications(file);
+    for (const raw of file.runs) {
       if (seenAgentIds.has(raw.agentId)) continue;
       seenAgentIds.add(raw.agentId);
-      const run = assembleRun(raw, options.sources, transcript);
+      const run = assembleLegacy(raw, transcript);
       legacyRuns.set(raw.agentId, run);
       if (run !== null) {
         persist(run);
@@ -181,12 +296,12 @@ export function ingest(options: IngestOptions): Run[] {
 
   for (const sidechainPath of discoverSidechains(options.projectsRoot)) {
     const parentAgentId = parseSidechainParentAgentId(sidechainPath);
-    const entries = readJsonl(sidechainPath);
-    collectNotifications(entries);
-    for (const raw of extractRuns(entries)) {
+    const file = extraction(sidechainPath, true);
+    collectNotifications(file);
+    for (const raw of file.runs) {
       if (seenAgentIds.has(raw.agentId)) continue;
       seenAgentIds.add(raw.agentId);
-      const run = assembleRun(raw, options.sources, sidechainPath, parentAgentId);
+      const run = assembleLegacy(raw, sidechainPath, parentAgentId);
       legacyRuns.set(raw.agentId, run);
       if (run !== null) {
         persist(run);
@@ -196,18 +311,50 @@ export function ingest(options: IngestOptions): Run[] {
 
   for (const candidate of discoverMetaRuns(options.projectsRoot)) {
     try {
-      const metaRun = assembleCapturedRun(
+      const st = statOf(candidate.sidechainPath);
+      const status = notificationStatus.get(candidate.agentId);
+      const legacy = legacyRuns.get(candidate.agentId);
+
+      // Fast path: attribute from the cached sub-transcript facts, and skip the
+      // sub-transcript read when nothing about the run can have changed (FR-36).
+      const cached = st && cache.get(candidate.sidechainPath, st.size, st.mtimeMs);
+      if (cached && cached.facts !== undefined) {
+        const identity = resolveRunIdentity(
+          { agentType: candidate.meta.agentType, cwd: cached.facts.cwd },
+          options.sources,
+        );
+        if (identity === null) continue;
+        const key = identityKey(identity);
+        const sameLegacy = legacy != null && legacy.identityKey === key;
+        if (sameLegacy && isLegacyComplete(legacy)) {
+          persist(mergeCompleteLegacy(legacy, candidate.meta));
+          continue;
+        }
+        const existing = sameLegacy ? undefined : store.forRun(key, candidate.agentId);
+        if (isUnchanged(existing, candidate.sidechainPath, st)) {
+          seenAgentIds.add(candidate.agentId);
+          persist({
+            ...existing,
+            status: status ?? existing.status,
+            parentAgentId: candidate.meta.parentAgentId ?? existing.parentAgentId,
+            spawnDepth: candidate.meta.spawnDepth ?? existing.spawnDepth,
+          });
+          continue;
+        }
+      }
+
+      const assembled = assembleCapturedRun(
         {
           agentId: candidate.agentId,
           agentType: candidate.meta.agentType,
           sidechainPath: candidate.sidechainPath,
-          status: notificationStatus.get(candidate.agentId),
+          status,
           meta: candidate.meta,
         },
         options.sources,
       );
-      if (metaRun === null) continue;
-      const legacy = legacyRuns.get(candidate.agentId);
+      if (assembled === null) continue;
+      const metaRun = withStat(assembled, st);
       if (seenAgentIds.has(candidate.agentId)) {
         // Seen by a legacy path: merge when both attribute to the same identity.
         // A different identity is a different `(identityKey, runId)` key (FR-16),
@@ -225,6 +372,9 @@ export function ingest(options: IngestOptions): Run[] {
       // A single unreadable run must never abort ingestion or drop the others.
     }
   }
+
+  cache.prune(discoveredPaths);
+  cache.save();
 
   return store.list();
 }

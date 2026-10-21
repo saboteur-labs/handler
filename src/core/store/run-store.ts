@@ -44,6 +44,8 @@ export function defaultRunStorePath(): string {
 export class RunStore {
   private readonly filePath: string;
   private readonly runs: Run[];
+  private deferring = false;
+  private pending = false;
 
   constructor(filePath: string = defaultRunStorePath()) {
     this.filePath = filePath;
@@ -89,7 +91,29 @@ export class RunStore {
     return this.runs.find((run) => run.identityKey === identityKey && run.runId === runId);
   }
 
+  /**
+   * Run `fn` with writes deferred: every `add`/`upsert` inside updates memory
+   * only, and the file is written once at the end (even if `fn` throws). Ingest
+   * uses this so a first pass that touches thousands of records rewrites the
+   * store once instead of once per record.
+   */
+  batch<T>(fn: () => T): T {
+    const outer = this.deferring;
+    this.deferring = true;
+    try {
+      return fn();
+    } finally {
+      this.deferring = outer;
+      if (!outer && this.pending) this.persist();
+    }
+  }
+
   private persist(): void {
+    if (this.deferring) {
+      this.pending = true;
+      return;
+    }
+    this.pending = false;
     const file: RunStoreFile = { version: RUN_STORE_VERSION, runs: this.runs };
     writeJsonFile(this.filePath, file);
   }

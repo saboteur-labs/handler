@@ -6,14 +6,16 @@
  * ingest, the SubagentStop hook and `import-runlog`. Everything per-run is
  * derived from the sub-transcript; the legacy `assembleRun` is untouched.
  */
+import { existsSync } from 'node:fs';
+
 import { identityKey } from './identity';
-import { readRunTelemetry, resolveRunIdentity, type Run, type RunTag } from './run';
+import { resolveRunIdentity, summarizeTelemetry, type Run, type RunTag } from './run';
 import { loadDefinitionSnapshot } from './snapshot';
 import type { AgentSource } from './sources/source';
 import { readJsonl } from './transcripts/jsonl';
 import type { SubagentMeta } from './transcripts/meta';
 import type { NotificationStatus } from './transcripts/notifications';
-import { computeRunMetrics } from './transcripts/run-metrics';
+import { computeRunMetricsFromEntries } from './transcripts/run-metrics';
 
 /** Values used only when the sub-transcript does not carry them. */
 export interface CaptureFallback {
@@ -32,7 +34,7 @@ export interface CaptureInput {
   readonly fallback?: CaptureFallback;
 }
 
-interface TranscriptFacts {
+export interface TranscriptFacts {
   cwd: string | undefined;
   sessionId: string | undefined;
   timestamp: string | undefined;
@@ -42,15 +44,9 @@ function nonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
-/** First cwd, sessionId and parseable timestamp found in the sub-transcript. */
-function readTranscriptFacts(sidechainPath: string): TranscriptFacts {
+/** First cwd, sessionId and parseable timestamp found in the parsed sub-transcript entries. */
+export function transcriptFactsFromEntries(entries: readonly unknown[]): TranscriptFacts {
   const facts: TranscriptFacts = { cwd: undefined, sessionId: undefined, timestamp: undefined };
-  let entries: unknown[];
-  try {
-    entries = readJsonl(sidechainPath);
-  } catch {
-    return facts;
-  }
   for (const entry of entries) {
     if (typeof entry !== 'object' || entry === null) continue;
     const e = entry as Record<string, unknown>;
@@ -64,10 +60,10 @@ function readTranscriptFacts(sidechainPath: string): TranscriptFacts {
   return facts;
 }
 
-/** Telemetry for the sub-transcript, or `undefined` when it cannot be read. */
-function safeTelemetry(sidechainPath: string): Run['telemetry'] {
+/** Parse the sub-transcript once, or `undefined` when it cannot be read. */
+function readEntriesOnce(sidechainPath: string): unknown[] | undefined {
   try {
-    return readRunTelemetry(sidechainPath);
+    return readJsonl(sidechainPath);
   } catch {
     return undefined;
   }
@@ -82,7 +78,9 @@ export function assembleCapturedRun(
   input: CaptureInput,
   sources: readonly AgentSource[],
 ): Run | null {
-  const facts = readTranscriptFacts(input.sidechainPath);
+  // One parse feeds the facts, the metrics and the telemetry (FR-36).
+  const entries = readEntriesOnce(input.sidechainPath);
+  const facts = transcriptFactsFromEntries(entries ?? []);
   const cwd = facts.cwd ?? input.fallback?.cwd;
   const identity = resolveRunIdentity({ agentType: input.agentType, cwd }, sources);
   if (identity === null) {
@@ -93,7 +91,10 @@ export function assembleCapturedRun(
   );
   const definitionSnapshot = source ? loadDefinitionSnapshot(source, identity.name) : null;
 
-  const { metrics, noUsableData } = computeRunMetrics(input.sidechainPath);
+  const { metrics, noUsableData } =
+    entries === undefined
+      ? { metrics: undefined, noUsableData: true }
+      : computeRunMetricsFromEntries(entries);
   const tags: RunTag[] = [];
   if (noUsableData) tags.push('incomplete');
   if (definitionSnapshot === null) tags.push('orphan');
@@ -113,7 +114,10 @@ export function assembleCapturedRun(
     toolStats: metrics?.toolStats,
     definitionSnapshot,
     tags,
-    telemetry: safeTelemetry(input.sidechainPath),
+    telemetry:
+      entries === undefined || !existsSync(input.sidechainPath)
+        ? undefined
+        : summarizeTelemetry(entries),
     ...(input.meta?.parentAgentId !== undefined && { parentAgentId: input.meta.parentAgentId }),
     ...(input.meta?.spawnDepth !== undefined && { spawnDepth: input.meta.spawnDepth }),
   };
