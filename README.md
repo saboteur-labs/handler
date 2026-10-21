@@ -298,7 +298,9 @@ Print the Claude Code configuration fragment for handler's optional real-time
 capture. handler observes runs by parsing transcripts, which needs no setup; the
 `SubagentStop` hook is a complementary path that records each run the moment it
 finishes. It's never required — transcript parsing stays the source of truth,
-and everything works with the hook disabled.
+and everything works with the hook disabled. The hook reads the `SubagentStop`
+payload (`agent_id`, `agent_type`, `agent_transcript_path`, ...) and assembles the run
+from the sub-transcript it points to.
 
 - `handler hook enable` — print the `SubagentStop` fragment to merge into your
   Claude Code `settings.json` (user-level `~/.claude/settings.json` or per-repo
@@ -411,8 +413,13 @@ variable — handy for testing or non-standard setups:
 handler is built as a core library (`src/core/`) behind a thin CLI (`src/cli/`), so a
 future GUI can consume the same API. It relies only on Claude Code's on-disk data:
 transcripts under `~/.claude/projects/`, with each subagent run isolated to its own
-`subagents/agent-<id>.jsonl` and attributed deterministically via the parent session's
-`Task` result. Agent identity is the tuple `(source-type, normalized-source-path, name)`,
+`subagents/agent-<id>.jsonl`. Each run is discovered through its sibling
+`agent-<id>.meta.json` (which names the agent), its status is taken from the latest
+`<task-notification>` in the parent session, and its metrics are computed from the
+sub-transcript; older transcripts that carry a `toolUseResult` summary on the parent's
+`Task` result are still read. Run records carry a source, with transcript taking
+precedence over the `SubagentStop` hook, which takes precedence over imported runlogs.
+Agent identity is the tuple `(source-type, normalized-source-path, name)`,
 and each run snapshots the definition's _content_ so history survives renames and edits.
 Nested runs — subagents a subagent spawns — are discovered by walking those sidechain
 files recursively; each nested run attributes to its own agent (no roll-ups) and records
