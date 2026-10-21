@@ -25,7 +25,7 @@
 **Depends on:** 1
 **Estimate:** 3
 **Notes:** Covers FR-3, and the metric half of FR-5 and FR-8. Legacy key set was read from the 88 runs in the real `~/.handler/runs.json` (all 88 carry exactly those 7 keys); the repo's own fixtures only show `readCount`/`editCount`. The legacy tool-name to category mapping is NOT determinable from the repo (the source `toolUseResult` data is gone), so the proposed mapping (Read to readCount; Grep and Glob to searchCount; Bash to bashCount; Edit, Write, MultiEdit, NotebookEdit to editFileCount; everything else to otherToolCount) is an unverified assumption and must be labelled as such in code comments. `linesAdded`/`linesRemoved` cannot be derived reliably from tool_use inputs; derive from Edit/Write inputs if feasible, else emit 0 and say so in a comment. Scoring (`src/core/scoring/*`) reads telemetry from the sub-transcript, not `toolStats`; `toolStats` is consumed only by `src/core/metrics.ts` aggregation and `show`. `totalTokens` is a final-turn context size by spec; document that in the doc comment. Notification `<usage>` must not be a source in production code.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 3: Task-notification parser and status resolution
 
