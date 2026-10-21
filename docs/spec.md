@@ -58,15 +58,22 @@ _Secondary audiences (small teams sharing project agents; skill/agent authors) a
 
 1. The system MUST ingest subagent runs by reading Claude Code's on-disk transcripts without requiring instrumentation. [US-1]
 2. The system MUST attribute each run to an agent using the parent `Task` result's `agentType` (name) and `agentId` (join key to the per-run sub-transcript). [US-1][US-2]
+
+   > Amended 2026-10-21: superseded for current Claude Code data by `docs/specs/feature-subagent-run-capture.md` FR-1, FR-13, and FR-14. Measured 2026-10-21, 0 of 1,318 `Agent` results carried `agentType` and `agentId`; the agent name now comes from the sibling `agent-<id>.meta.json` and the run id from the filename. The `Task`-result path remains for older transcripts.
+
 3. The system MUST exclude built-in and plugin agents from attributed results via a builtin denylist. [US-2]
 4. The system MUST resolve run names against a configurable set of agent sources, supporting at least user-level (`~/.claude/agents`) and per-repo (`<repo>/.claude/agents`) locations, deriving the conventional agent folder for a given repo. [US-3]
 5. The system MUST allow a user to register and list agent sources from the CLI. [US-3]
 6. The system MUST tolerate runs without a completed summary (e.g. interrupted runs) and runs whose definition cannot be found, keeping them and tagging them rather than dropping them. [US-1][US-4]
 7. The system SHOULD guard on the presence of the expected `toolUseResult` summary schema rather than assume it, so a future Claude Code schema change degrades gracefully. [US-1]
 
+   > Amended 2026-10-21: the anticipated schema change occurred (background agents return `status: "async_launched"` with no `agentType` or totals). Handled per `docs/specs/feature-subagent-run-capture.md` FR-8 and FR-14.
+
 **Identity & history** 8. The system MUST treat an agent's identity as the tuple `(source-type, normalized-source-path, name)` so identically-named agents in different sources are distinct. When a run could match more than one source, the system MUST attribute it by the run's recorded `cwd`: the registered repo source whose path is the nearest ancestor of `cwd` wins; if none matches, it falls back to the user-level source. [US-3][US-4] 9. The system MUST snapshot the agent's definition content at the time of each run, so renames, edits, and deletions are visible and history survives them. A snapshot MUST be stored as content (not a path reference) so it remains valid after the source file changes or is deleted. [US-4]
 
 **Metrics & CLI** 10. The system MUST provide a CLI command to list the user's agents. [US-5] 11. The system MUST provide a CLI command to show, per agent, its run history and metrics: invocation count, duration, tool usage, token/cost, and last-used date. [US-5]
+
+    > Amended 2026-10-21: for meta-discovered runs, duration, tokens, and tool counts are computed from the sub-transcript and status comes from the latest `<task-notification>`, not from a `Task` result summary (`docs/specs/feature-subagent-run-capture.md` FR-3, FR-4). `totalTokens` is the final assistant turn's context size, not cumulative consumption.
 
 **Behavioral scoring (deterministic)** 12. The system MUST compute a per-run deterministic behavioral score covering Tier A checks: tool-scope adherence, permission-denial count, terminal status, tool-error/thrash count, write-boundary respect, and path/scope boundary. [US-6] - **Thrash:** a thrash event is ≥3 occurrences within a single run of the same `(tool-name, normalized-args)`, where args are normalized by JSON canonicalization (key-sorted, whitespace-stripped) and, for `Bash`, by the trimmed command string. The check reports the count of distinct thrash events. [US-6] - **Path/scope boundary:** the implicit scope of a run is the run's recorded `cwd` and its subtree. A violation is any write/edit or destructive `Bash` whose resolved target path falls outside that subtree. Reads are not boundary-checked. [US-6] 13. The system MUST compute tool-utilization (granted-but-unused tools) as part of the score. [US-6] 14. The system MUST NOT use an LLM-judge for the MVP score, and MUST compute scoring without transmitting agent definitions, code, or transcripts off the machine. [US-6] 15. Where an agent does not declare a `tools` scope, the system MUST treat tool-scope adherence as not-applicable, fall back to write/path-boundary checks, and surface "undeclared scope" as a definition smell (see Req 17). [US-6][US-7]
 
@@ -93,7 +100,7 @@ No open questions block the MVP. The four prior implementation questions are now
 - [v1] — Lightweight GUI over the CLI core for browsing runs and scores.
 - [v1] — Roster-level insights (which agents are unused, failing, or expensive).
 - [v1] — Persistent, queryable run store with trend-over-time per agent.
-- [v1] — `SubagentStop` hook for real-time capture (MVP relies on transcript parsing only).
+- [v1] — `SubagentStop` hook for real-time capture (MVP relies on transcript parsing only). Shipped in v1 (spec-v1 Reqs 37–38); see `docs/specs/feature-subagent-run-capture.md` for the payload handling.
 - [v2] — Skill registry routing evaluation into remediation (repo/user/web skills).
 - [v2] — Agent-editing workflows driven by registered skills.
 - [v2] — Shareable/exportable evaluation reports for teams or published agents.

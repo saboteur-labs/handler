@@ -4,6 +4,9 @@
  * Both commands hold no business logic — they only format and print static
  * text. Neither reads from nor writes to any store.
  */
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { run } from '../index';
@@ -68,5 +71,37 @@ describe('handler CLI: hook commands (V1 Feature 5 Req 8)', () => {
     it('does not throw', async () => {
       await expect(invoke(['hook', 'disable'])).resolves.toBeDefined();
     });
+  });
+
+  describe('print-only (FR-21): never installs the hook', () => {
+    const cliDir = join(import.meta.dirname ?? __dirname, '..');
+
+    it('hook enable/disable write no settings.json under a temp HOME or cwd', async () => {
+      const home = mkdtempSync(join(tmpdir(), 'handler-hook-home-'));
+      const prevHome = process.env.HOME;
+      const prevCwd = process.cwd();
+      try {
+        process.env.HOME = home;
+        process.chdir(home);
+        await invoke(['hook', 'enable']);
+        await invoke(['hook', 'disable']);
+        expect(readdirSync(home, { recursive: true })).toEqual([]);
+        expect(existsSync(join(home, '.claude', 'settings.json'))).toBe(false);
+      } finally {
+        process.chdir(prevCwd);
+        if (prevHome === undefined) delete process.env.HOME;
+        else process.env.HOME = prevHome;
+        rmSync(home, { recursive: true, force: true });
+      }
+    });
+
+    it.each(['commands/hook.ts', 'hook-handler.ts'])(
+      '%s has no filesystem-write path to a settings file',
+      (file) => {
+        const src = readFileSync(join(cliDir, file), 'utf8');
+        expect(src).not.toMatch(/writeFile|appendFile|copyFile|rename\(|mkdir|createWriteStream/);
+        expect(src).not.toMatch(/node:fs/);
+      },
+    );
   });
 });

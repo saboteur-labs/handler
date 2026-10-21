@@ -298,7 +298,9 @@ Print the Claude Code configuration fragment for handler's optional real-time
 capture. handler observes runs by parsing transcripts, which needs no setup; the
 `SubagentStop` hook is a complementary path that records each run the moment it
 finishes. It's never required — transcript parsing stays the source of truth,
-and everything works with the hook disabled.
+and everything works with the hook disabled. The hook reads the `SubagentStop`
+payload (`agent_id`, `agent_type`, `agent_transcript_path`, ...) and assembles the run
+from the sub-transcript it points to.
 
 - `handler hook enable` — print the `SubagentStop` fragment to merge into your
   Claude Code `settings.json` (user-level `~/.claude/settings.json` or per-repo
@@ -307,6 +309,24 @@ and everything works with the hook disabled.
   back off.
 
 Both commands only print text — they never edit your settings for you.
+
+### `handler import-runlog`
+
+Import subagent runs from Claude Code's runlogs (default `~/.claude/runlogs`)
+into the run store, attributed against your registered sources like any other
+run. It prints how many runs were imported, how many stops were skipped for an
+empty `agent_type`, and how many lines were skipped as malformed. Malformed
+lines never fail the command; it exits 0.
+
+Flags:
+
+- `--root <dir>` — read runlogs from `<dir>` instead of `~/.claude/runlogs`
+  (point it at the runlogs directory itself).
+
+Limitation: the run store is a regenerable cache. A later handler version bump,
+or `handler reset` at the default `derived` scope, drops runlog-imported runs.
+They return only by re-running `handler import-runlog` while the runlogs still
+exist.
 
 ### `handler judge <agent> <runId>`
 
@@ -388,13 +408,24 @@ variable — handy for testing or non-standard setups:
 | `HANDLER_PROJECTS`    | Claude Code transcripts root (default `~/.claude/projects`).                    |
 | `ANTHROPIC_API_KEY`   | API key for the opt-in Tier C judge (no default; required for `handler judge`). |
 
+The run store is accompanied by a regenerable ingest cache, `ingest-cache.json`,
+kept in the same directory as the run store (so `HANDLER_STORE` relocates it too).
+It records each transcript's size and modification time so unchanged transcripts
+are skipped on repeated ingest. It is safe to delete; `handler reset` clears it at
+the default `derived` scope and with `--all`.
+
 ## How it works
 
 handler is built as a core library (`src/core/`) behind a thin CLI (`src/cli/`), so a
 future GUI can consume the same API. It relies only on Claude Code's on-disk data:
 transcripts under `~/.claude/projects/`, with each subagent run isolated to its own
-`subagents/agent-<id>.jsonl` and attributed deterministically via the parent session's
-`Task` result. Agent identity is the tuple `(source-type, normalized-source-path, name)`,
+`subagents/agent-<id>.jsonl`. Each run is discovered through its sibling
+`agent-<id>.meta.json` (which names the agent), its status is taken from the latest
+`<task-notification>` in the parent session, and its metrics are computed from the
+sub-transcript; older transcripts that carry a `toolUseResult` summary on the parent's
+`Task` result are still read. Run records carry a source, with transcript taking
+precedence over the `SubagentStop` hook, which takes precedence over imported runlogs.
+Agent identity is the tuple `(source-type, normalized-source-path, name)`,
 and each run snapshots the definition's _content_ so history survives renames and edits.
 Nested runs — subagents a subagent spawns — are discovered by walking those sidechain
 files recursively; each nested run attributes to its own agent (no roll-ups) and records

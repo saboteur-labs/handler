@@ -14,6 +14,7 @@ export { resolveAgentByName, summarizeAgents } from './agents';
 export { BUILTIN_AGENT_NAMES, isBuiltinAgent } from './denylist';
 export { ingest } from './ingest';
 export type { IngestOptions } from './ingest';
+export { ingestCachePathFor } from './store/ingest-cache';
 export type { AgentMetrics } from './metrics';
 export { aggregateMetrics } from './metrics';
 export type { Run, RunTag, RunTelemetrySummary } from './run';
@@ -188,3 +189,5 @@ export type {
   ResetTargetKey,
 } from './reset';
 export { executeReset, planReset, RESET_SCOPES } from './reset';
+export type { ImportRunlogOptions, ImportRunlogResult } from './runlog/import';
+export { importRunlog } from './runlog/import';

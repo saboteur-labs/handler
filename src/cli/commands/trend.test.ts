@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { copyCaptureFixtures } from '../../core/__fixtures__/capture/fixtures';
 import { run } from '../index';
 
 describe('handler CLI: trend command', () => {
@@ -368,5 +369,49 @@ describe('handler CLI: trend command', () => {
       // Degrades gracefully: shows raw id, no error
       expect(report).toContain('spawned by agent-99');
     });
+  });
+});
+
+describe('handler CLI: trend annotates meta-discovered nested runs (capture fixture, FR-12)', () => {
+  let work: string;
+  let home: string;
+  let out: string[];
+  let invokeCapture: (args: string[]) => Promise<number>;
+
+  beforeEach(async () => {
+    work = realpathSync.native(mkdtempSync(join(tmpdir(), 'handler-trend-capture-')));
+    const { projectsRoot } = copyCaptureFixtures(join(work, 'fx'));
+    home = join(work, 'home');
+    const agentsDir = join(home, '.claude', 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    for (const name of ['code-reviewer', 'test-writer', 'planner']) {
+      writeFileSync(join(agentsDir, `${name}.md`), `${name} definition`, 'utf8');
+    }
+    out = [];
+    invokeCapture = (args) =>
+      run(args, {
+        registryPath: join(work, 'sources.json'),
+        storePath: join(work, 'runs.json'),
+        scoreStorePath: join(work, 'scores.json'),
+        projectsRoot,
+        out: (line) => out.push(line),
+      });
+    await invokeCapture(['source', 'register', '--user', home]);
+    out.length = 0;
+  });
+
+  afterEach(() => {
+    rmSync(work, { recursive: true, force: true });
+  });
+
+  it('renders "spawned by code-reviewer" for the meta-discovered spawnDepth-2 planner run', async () => {
+    expect(await invokeCapture(['trend', 'planner'])).toBe(0);
+    const report = out.join('\n');
+    expect(report).toContain('spawned by code-reviewer');
+  });
+
+  it('does not annotate top-level meta-discovered runs', async () => {
+    expect(await invokeCapture(['trend', 'code-reviewer'])).toBe(0);
+    expect(out.join('\n')).not.toContain('spawned by');
   });
 });

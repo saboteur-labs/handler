@@ -90,6 +90,11 @@ interface CallRef {
 
 /** Parse the sidechain transcript at `sidechainPath` into per-turn telemetry. */
 export function readTelemetry(sidechainPath: string): RunTelemetry {
+  return telemetryFromEntries(readJsonl(sidechainPath));
+}
+
+/** Per-turn telemetry over already-parsed sidechain entries (read once, FR-36). */
+export function telemetryFromEntries(entries: readonly unknown[]): RunTelemetry {
   const turns: Turn[] = [];
   const filesEdited: string[] = [];
   const calls: CallRef[] = [];
@@ -99,7 +104,7 @@ export function readTelemetry(sidechainPath: string): RunTelemetry {
   let lastStop: StopReason | undefined;
   let interrupted = false;
 
-  for (const entry of readJsonl(sidechainPath)) {
+  for (const entry of entries) {
     if (!isRecord(entry)) {
       continue;
     }

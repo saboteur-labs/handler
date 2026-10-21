@@ -10,7 +10,7 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 
 import type { ResetPaths, ResetPlan, ResetScope, ResetTarget } from '../../core/index';
-import { executeReset, planReset } from '../../core/index';
+import { executeReset, ingestCachePathFor, planReset } from '../../core/index';
 import type { CliContext } from './source';
 
 interface ResetOptions {
@@ -89,6 +89,8 @@ function resolveScope(options: ResetOptions): ResetScope {
 function resetPaths(ctx: CliContext): ResetPaths {
   return {
     runs: ctx.storePath,
+    // The cache lives beside the run store, wherever that has been relocated to.
+    ...(ctx.storePath === undefined ? {} : { ingestCache: ingestCachePathFor(ctx.storePath) }),
     scores: ctx.scoreStorePath,
     tierB: ctx.tierBStorePath,
     tierC: ctx.tierCStorePath,

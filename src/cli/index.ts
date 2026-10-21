@@ -20,6 +20,7 @@ import { registerConventionsCommand } from './commands/conventions';
 import { registerGuiCommand } from './commands/gui';
 import { registerDiffCommand } from './commands/diff';
 import { registerHookCommand } from './commands/hook';
+import { registerImportRunlogCommand } from './commands/import-runlog';
 import { registerInsightsCommand } from './commands/insights';
 import { registerJudgeCommand } from './commands/judge';
 import { registerListCommand } from './commands/list';
@@ -170,6 +171,7 @@ export async function run(argv: readonly string[], options: RunOptions = {}): Pr
   registerHookCommand(program, ctx);
   registerGuiCommand(program, ctx);
   registerResetCommand(program, ctx);
+  registerImportRunlogCommand(program, ctx);
 
   try {
     await program.parseAsync([...argv], { from: 'user' });

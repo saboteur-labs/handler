@@ -21,6 +21,13 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import {
+  CAPTURE_AGENT_IDS,
+  CAPTURE_CWD,
+  CAPTURE_SESSION_ID,
+  copyCaptureFixtures,
+  expectedFromSubTranscript,
+} from './__fixtures__/capture/fixtures';
 import { agentIdentity, identityKey, ingest, resolveParentAnnotation, userSource } from './index';
 import { RunStore } from './store/run-store';
 
@@ -157,5 +164,92 @@ describe('ingest — nested subagent capture integration (Reqs 39-44)', () => {
     const checkerRun = runs.find((r) => r.runId === 'agent-4');
     expect(checkerRun?.parentAgentId).toBeDefined();
     expect(resolveParentAnnotation(checkerRun!.parentAgentId!, runs)).toBe('spawned by agent-99');
+  });
+});
+
+describe('ingest — subagent run capture integration (capture fixtures, FR-1..FR-16, FR-33)', () => {
+  let work: string;
+  let home: string;
+  let projectsRoot: string;
+  let storePath: string;
+
+  beforeEach(() => {
+    work = mkdtempSync(join(tmpdir(), 'handler-capture-int-'));
+    ({ projectsRoot } = copyCaptureFixtures(join(work, 'fx')));
+    home = join(work, 'home');
+    const agentsDir = join(home, '.claude', 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    for (const name of ['code-reviewer', 'test-writer', 'planner']) {
+      writeFileSync(join(agentsDir, `${name}.md`), `${name} definition`, 'utf8');
+    }
+    storePath = join(work, 'store', 'runs.json');
+  });
+
+  afterEach(() => {
+    rmSync(work, { recursive: true, force: true });
+  });
+
+  function runIngest(): ReturnType<typeof ingest> {
+    return ingest({ sources: [userSource(home)], projectsRoot, storePath });
+  }
+
+  it('attributes meta-discovered runs, dropping built-ins, and keeps unusable ones tagged', () => {
+    const runs = runIngest();
+    const ids = CAPTURE_AGENT_IDS;
+
+    expect(runs.map((r) => r.runId).sort()).toEqual(
+      [ids.reviewer, ids.writer, ids.empty, ids.malformed, ids.nested].sort(),
+    );
+    expect(runs.find((r) => r.runId === ids.explore)).toBeUndefined();
+    expect(runs.find((r) => r.runId === ids.unmatched)).toBeUndefined();
+    expect(runs.find((r) => r.runId === ids.empty)?.tags).toContain('incomplete');
+    expect(runs.find((r) => r.runId === ids.malformed)?.tags).toContain('incomplete');
+    expect(runs.find((r) => r.runId === ids.malformed)?.status).toBeUndefined();
+  });
+
+  it('computes metrics from the sub-transcript, agreeing with the notification oracle', () => {
+    const reviewer = runIngest().find((r) => r.runId === CAPTURE_AGENT_IDS.reviewer)!;
+    const expected = expectedFromSubTranscript(
+      join(
+        projectsRoot,
+        '-synthetic-workspace-app',
+        'sess-0001',
+        'subagents',
+        `agent-${CAPTURE_AGENT_IDS.reviewer}.jsonl`,
+      ),
+    )!;
+
+    expect(reviewer.totalToolUseCount).toBe(expected.toolUseCount);
+    expect(reviewer.totalDurationMs).toBe(expected.durationMs);
+    expect(reviewer.totalTokens).toBe(expected.totalTokens);
+    expect(reviewer.cwd).toBe(CAPTURE_CWD);
+    expect(reviewer.sessionId).toBe(CAPTURE_SESSION_ID);
+  });
+
+  it('takes status from the latest notification (including a resumed run) and ignores strays', () => {
+    const runs = runIngest();
+    const status = (id: string): string | undefined => runs.find((r) => r.runId === id)?.status;
+
+    expect(status(CAPTURE_AGENT_IDS.reviewer)).toBe('completed');
+    expect(status(CAPTURE_AGENT_IDS.writer)).toBe('failed');
+    expect(status(CAPTURE_AGENT_IDS.empty)).toBe('killed');
+    expect(status(CAPTURE_AGENT_IDS.nested)).toBe('completed');
+  });
+
+  it('captures the spawnDepth-2 run with its parentAgentId', () => {
+    const runs = runIngest();
+    const nested = runs.find((r) => r.runId === CAPTURE_AGENT_IDS.nested)!;
+
+    expect(nested.agentName).toBe('planner');
+    expect(nested.spawnDepth).toBe(2);
+    expect(nested.parentAgentId).toBe(CAPTURE_AGENT_IDS.reviewer);
+    expect(resolveParentAnnotation(nested.parentAgentId!, runs)).toBe('spawned by code-reviewer');
+  });
+
+  it('is idempotent across repeated ingests', () => {
+    const first = runIngest();
+    const second = runIngest();
+    expect(second).toEqual(first);
+    expect(new RunStore(storePath).list()).toHaveLength(first.length);
   });
 });

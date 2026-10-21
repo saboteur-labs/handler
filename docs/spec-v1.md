@@ -1,6 +1,6 @@
 # Product Spec: handler — observability and evaluation for the agents you build (v1)
 
-**Milestone scope:** v1 only. MVP requirements (Reqs 1–21) live in `docs/spec.md` and are assumed shipped; v2 and post-MVP items are listed under Out of Scope (Deferred).
+**Milestone scope:** v1 only. MVP requirements (Reqs 1–21) live in `docs/spec.md` and are assumed shipped (Reqs 2, 7, 11 on `Task`-result attribution and metrics carry a 2026-10-21 amendment; see `docs/specs/feature-subagent-run-capture.md`); v2 and post-MVP items are listed under Out of Scope (Deferred).
 **Status:** Draft
 **Source concept:** handler — observability and evaluation for the agents you build (`docs/concept.md`)
 **Requirement numbering:** continues the global sequence from `docs/spec.md`; v1 requirements begin at Req 22 and run through Req 53.
@@ -88,11 +88,16 @@ _Secondary audiences (small teams; published-agent authors) are acknowledged in 
 37. The system MUST support an optional `SubagentStop` hook for real-time run capture, and MUST reconcile a hook event and the corresponding transcript span into a single run record without creating duplicates. [US-15]
 38. The hook MUST be complementary, not required: transcript parsing MUST remain the source of truth for run content, and the system MUST function fully with the hook disabled. [US-15]
 
+    > Amended 2026-10-21: the real `SubagentStop` payload is snake_case (`agent_id`, `agent_type`, `session_id`, `cwd`, `agent_transcript_path`) and carries no status or totals; Reqs 37–38 are restored against it by `docs/specs/feature-subagent-run-capture.md` FR-17–FR-22. Each run records a `source` with precedence transcript > hook > runlog, so a hook record never overwrites a transcript record.
+
 **Nested subagent capture**
 
 39. Discovery MUST recurse into `<sessionId>/subagents/` directories at arbitrary nesting depth, so that runs from agents spawned by agents are discovered regardless of how deep in the call tree they occur. [US-17]
 40. Each nested run MUST be attributed to its own agent identity tuple `(source-type, normalized-source-path, name)` using the same resolution logic as top-level runs (nearest registered repo-source ancestor of the run's `cwd`, falling back to user-level). Cost and score data MUST NOT be rolled up from a child run into its parent. [US-17]
 41. The system MUST extract the `parentAgentId` from the containing sidechain filename (`agent-<parentAgentId>.jsonl`) and persist it as an optional field on the run record. A run-store schema version bump MUST accompany this change. [US-17]
+
+    > Amended 2026-10-21: for meta-discovered runs, `parentAgentId` and `spawnDepth` are read from the run's `agent-<id>.meta.json` (`docs/specs/feature-subagent-run-capture.md` FR-11); filename extraction remains for the legacy sidechain path.
+
 42. Discovery MUST guard against ingesting the same `agentId` twice — for example when a nested run would otherwise be encountered via multiple traversal paths — and MUST NOT produce duplicate run records. [US-17]
 43. Interrupted or incomplete nested runs MUST be kept-and-tagged rather than dropped, consistent with the existing parse-defensively invariant (MVP Req 7). [US-17]
 44. The `show` and `trend` commands MUST resolve `parentAgentId` to the parent run's identity and display a read-only "spawned by <agent>" annotation per run. When the parent run has not been ingested or its definition is absent, the annotation MUST degrade gracefully — showing the raw parent name or id — and MUST NOT cause the command to fail. [US-17]

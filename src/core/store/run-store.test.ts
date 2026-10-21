@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -104,6 +104,26 @@ describe('RunStore', () => {
     expect(store.list()).toHaveLength(1); // re-ingested under the current schema
   });
 
+  it('discards a version-6 store, degrading to empty (v7 bump)', () => {
+    expect(RUN_STORE_VERSION).toBe(7);
+    writeFileSync(file, JSON.stringify({ version: 6, runs: [run()] }), 'utf8');
+    expect(new RunStore(file).list()).toEqual([]);
+  });
+
+  it('round-trips a runlog-sourced run with spawnDepth', () => {
+    writeFileSync(
+      file,
+      JSON.stringify({
+        version: RUN_STORE_VERSION,
+        runs: [run({ source: 'runlog', spawnDepth: 2 })],
+      }),
+      'utf8',
+    );
+    const loaded = new RunStore(file).list();
+    expect(loaded[0]?.source).toBe('runlog');
+    expect(loaded[0]?.spawnDepth).toBe(2);
+  });
+
   describe('parentAgentId field (v6 schema)', () => {
     it('discards a store written under version 5 (old schema)', () => {
       writeFileSync(file, JSON.stringify({ version: 5, runs: [run()] }), 'utf8');
@@ -182,5 +202,26 @@ describe('RunStore', () => {
       expect(fresh.list()).toHaveLength(1);
       expect(fresh.list()[0]?.totalTokens).toBe(2);
     });
+  });
+});
+
+describe('RunStore.batch', () => {
+  it('defers the write to the end of the batch, and still writes when the callback throws', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'handler-runstore-batch-'));
+    const path = join(dir, 'runs.json');
+    try {
+      const store = new RunStore(path);
+      expect(() =>
+        store.batch(() => {
+          store.upsert(run({ runId: '1' }));
+          store.upsert(run({ runId: '2' }));
+          expect(existsSync(path)).toBe(false);
+          throw new Error('boom');
+        }),
+      ).toThrow('boom');
+      expect(new RunStore(path).list().map((r) => r.runId)).toEqual(['1', '2']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -1,0 +1,11 @@
+{
+  "agentType": "planner",
+  "launchedWithDefaults": false,
+  "description": "Synthetic planner task",
+  "toolUseId": "toolu_nested_planner",
+  "spawnDepth": 2,
+  "requestShape": "agent_tool",
+  "requestNonInteractive": false,
+  "parentAgentId": "a1111aaaa1111aaaa",
+  "finished": true
+}

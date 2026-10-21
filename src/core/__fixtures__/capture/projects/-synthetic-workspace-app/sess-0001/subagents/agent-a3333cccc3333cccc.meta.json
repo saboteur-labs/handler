@@ -1,0 +1,10 @@
+{
+  "agentType": "Explore",
+  "launchedWithDefaults": false,
+  "description": "Synthetic Explore task",
+  "toolUseId": "toolu_launch_explore",
+  "spawnDepth": 1,
+  "requestShape": "agent_tool",
+  "requestNonInteractive": false,
+  "finished": true
+}
