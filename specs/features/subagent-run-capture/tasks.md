@@ -135,7 +135,7 @@
 **Depends on:** 5, 6, 12
 **Estimate:** 5
 **Notes:** Covers FR-28, FR-29, FR-30, FR-31 (local-only, no network), FR-16 (import side). Persist only through `RunStore`. Serialize on `src/core/index.ts` edits: this is the only task that edits it.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 14: `import-runlog` CLI command, help text, and README
 

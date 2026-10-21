@@ -188,3 +188,5 @@ export type {
   ResetTargetKey,
 } from './reset';
 export { executeReset, planReset, RESET_SCOPES } from './reset';
+export type { ImportRunlogOptions, ImportRunlogResult } from './runlog/import';
+export { importRunlog } from './runlog/import';
