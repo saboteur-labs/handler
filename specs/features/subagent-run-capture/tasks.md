@@ -35,7 +35,7 @@
 **Depends on:** 1
 **Estimate:** 3
 **Notes:** Covers FR-4 (status source), part of FR-7 and FR-8. Ignoring task-ids that match no on-disk run happens at the join in the ingest task (7), because only ingest knows the on-disk run set. Notification `<usage>` is not parsed into metrics (FR-3); it need not be parsed at all in production code.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 4: Meta-file reader and `agent-*.meta.json` discovery
 
