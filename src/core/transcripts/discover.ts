@@ -12,7 +12,9 @@
  */
 import { type Dirent, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
+
+import { readMeta, type SubagentMeta } from './meta';
 
 /** Default projects root: `~/.claude/projects`. */
 export function defaultProjectsRoot(home: string = homedir()): string {
@@ -75,6 +77,43 @@ function collectJsonlFiles(dir: string, acc: string[]): void {
       collectJsonlFiles(entryPath, acc);
     }
   }
+}
+
+/** A subagent run discovered via its `agent-<agentId>.meta.json` sibling. */
+export interface MetaRunCandidate {
+  /** Taken from the `agent-<agentId>.jsonl` filename. */
+  agentId: string;
+  /** The sidechain path exactly as found during the walk. */
+  sidechainPath: string;
+  metaPath: string;
+  meta: SubagentMeta;
+}
+
+const SIDECHAIN_FILE = /^agent-(.+)\.jsonl$/;
+
+/**
+ * Discover subagent runs by pairing each `agent-<id>.jsonl` under any
+ * `subagents/` directory (at arbitrary depth, so nested runs are included)
+ * with its sibling `agent-<id>.meta.json`. Only that exact filename pattern is
+ * considered, never a generic `.json` glob. A sidechain with a missing or
+ * unreadable meta is not a candidate; other runs are still discovered. A
+ * missing root yields `[]`. Sorted by `sidechainPath` for determinism.
+ */
+export function discoverMetaRuns(projectsRoot: string = defaultProjectsRoot()): MetaRunCandidate[] {
+  const runs: MetaRunCandidate[] = [];
+  for (const sidechainPath of discoverSidechains(projectsRoot)) {
+    const match = SIDECHAIN_FILE.exec(basename(sidechainPath));
+    if (!match) {
+      continue;
+    }
+    const agentId = match[1]!;
+    const metaPath = join(dirname(sidechainPath), `agent-${agentId}.meta.json`);
+    const meta = readMeta(metaPath);
+    if (meta) {
+      runs.push({ agentId, sidechainPath, metaPath, meta });
+    }
+  }
+  return runs.sort((a, b) => (a.sidechainPath < b.sidechainPath ? -1 : 1));
 }
 
 /** List directory entries, treating a missing directory as empty. */

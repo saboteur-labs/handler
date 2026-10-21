@@ -45,7 +45,7 @@
 **Depends on:** 1
 **Estimate:** 3
 **Notes:** Covers FR-1, FR-8 (meta side), and the meta-reading half of FR-11. Do not change existing `discoverSidechains` behavior (the legacy pass still uses it). Sorted output for determinism.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 5: Run model, source precedence, and store version 7
 
