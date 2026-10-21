@@ -155,7 +155,7 @@
 **Depends on:** 7, 10, 13
 **Estimate:** 3
 **Notes:** Covers FR-7, FR-15, FR-16, FR-22, FR-30 across paths, and FR-33 ("tests for FR-1 to FR-31 use the fixtures"). Test-only; if it exposes a defect, fix it in the owning module and note it in the commit.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 16: Manual acceptance check against real transcripts (not for CI)
 
