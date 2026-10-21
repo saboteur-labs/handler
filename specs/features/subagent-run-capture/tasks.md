@@ -125,7 +125,7 @@
 **Depends on:** 1, 9
 **Estimate:** 3
 **Notes:** Covers FR-25 (scan and root override), FR-26, FR-27 (dedup and counts), FR-31 (read-only, no throw on malformed lines). No identity or store logic here.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 13: Runlog import into the run store
 
