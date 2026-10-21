@@ -85,7 +85,7 @@
 **Depends on:** 7
 **Estimate:** 1
 **Notes:** Covers FR-12. Likely test-only since both commands already read `parentAgentId`. CLI stays free of logic; if the lookup needs fixing, fix it in core.
-**Done:** [ ]
+**Done:** [x]
 
 ### Task 9: Snake_case SubagentStop payload parser
 

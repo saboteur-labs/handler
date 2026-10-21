@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { TIER_C_VERSION, TierCStore } from '../../core/index';
+import { CAPTURE_AGENT_IDS, copyCaptureFixtures } from '../../core/__fixtures__/capture/fixtures';
 import { run } from '../index';
 
 /** Build the identityKey for a repo-registered agent (mirrors `identityKey` in core). */
@@ -550,5 +551,53 @@ describe('handler CLI: show command (Req 11)', () => {
       expect(report).toMatch(/fail/);
       expect(report).toContain('The agent exceeded scope and made unauthorized edits.');
     });
+  });
+});
+
+describe('handler CLI: show annotates meta-discovered nested runs (capture fixture, FR-12)', () => {
+  let work: string;
+  let home: string;
+  let out: string[];
+  let invokeCapture: (args: string[]) => Promise<number>;
+
+  beforeEach(async () => {
+    work = realpathSync.native(mkdtempSync(join(tmpdir(), 'handler-show-capture-')));
+    const { projectsRoot } = copyCaptureFixtures(join(work, 'fx'));
+    home = join(work, 'home');
+    const agentsDir = join(home, '.claude', 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    for (const name of ['code-reviewer', 'test-writer', 'planner']) {
+      writeFileSync(join(agentsDir, `${name}.md`), `${name} definition`, 'utf8');
+    }
+    out = [];
+    invokeCapture = (args) =>
+      run(args, {
+        registryPath: join(work, 'sources.json'),
+        storePath: join(work, 'runs.json'),
+        scoreStorePath: join(work, 'scores.json'),
+        noteStorePath: join(work, 'notes.json'),
+        tierBStorePath: join(work, 'tier-b.json'),
+        tierCStorePath: join(work, 'tier-c.json'),
+        projectsRoot,
+        out: (line) => out.push(line),
+      });
+    await invokeCapture(['source', 'register', '--user', home]);
+    out.length = 0;
+  });
+
+  afterEach(() => {
+    rmSync(work, { recursive: true, force: true });
+  });
+
+  it('renders "spawned by code-reviewer" for the meta-discovered spawnDepth-2 planner run', async () => {
+    expect(await invokeCapture(['show', 'planner'])).toBe(0);
+    const report = out.join('\n');
+    expect(report).toContain(CAPTURE_AGENT_IDS.nested);
+    expect(report).toContain('spawned by code-reviewer');
+  });
+
+  it('does not annotate top-level meta-discovered runs', async () => {
+    expect(await invokeCapture(['show', 'code-reviewer'])).toBe(0);
+    expect(out.join('\n')).not.toContain('spawned by');
   });
 });
